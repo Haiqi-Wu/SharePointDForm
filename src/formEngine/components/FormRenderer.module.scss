@@ -1,0 +1,104 @@
+/**
+ * Form Renderer Styles
+ */
+
+.form-renderer {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+
+  &--new, &--edit, &--view {}
+}
+
+.form-message { margin-bottom: 16px; }
+
+.form-stepper {
+  margin-bottom: 32px;
+
+  &__steps {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  &__step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    opacity: 0.5;
+
+    &--active, &--completed { opacity: 1; }
+    &--clickable { cursor: pointer; }
+  }
+
+  &__step-indicator {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f3f2f1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    margin-bottom: 8px;
+
+    .form-stepper__step--active & { background: #0078d4; color: white; }
+    .form-stepper__step--completed & { background: #107c10; color: white; }
+  }
+
+  &__step-title { font-size: 14px; text-align: center; }
+
+  &__actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid #e1dfdd;
+  }
+
+  &__actions-left, &__actions-right { display: flex; gap: 8px; }
+}
+
+.form-step {
+  &__title { margin-bottom: 24px;
+    h2 { margin: 0; font-size: 24px; font-weight: 600; }
+    p { margin: 8px 0 0; font-size: 14px; color: #605e5c; }
+  }
+
+  &__fields { display: flex; flex-direction: column; gap: 16px; }
+  &--empty { text-align: center; padding: 40px; color: #605e5c; }
+}
+
+.form-field-container { margin-bottom: 8px; }
+
+.form-field {
+  &--required .ms-Label::after { content: ' *'; color: #a80000; }
+  &--invalid .ms-Label { color: #a80000; }
+  &--readonly { opacity: 0.7; }
+
+  &__content { margin-top: 4px; }
+  &__errors { margin-top: 4px; }
+  &__error { color: #a80000; font-size: 12px; }
+  &__help { color: #605e5c; font-size: 12px; margin-top: 4px; }
+}
+
+.form-content { min-height: 300px; }
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e1dfdd;
+}
+
+.form-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: #605e5c;
+}

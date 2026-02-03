@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "share-point-dynamic-form-client-side-solution",
+    "id": "a2c59f79-b03b-419b-9028-bbd5dc3d0efd",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.22.0"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "SharePointDynamicForm description"
+      },
+      "longDescription": {
+        "default": "SharePointDynamicForm description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "share-point-dynamic-form Feature",
+        "description": "The feature that activates elements of the share-point-dynamic-form solution.",
+        "id": "79f4696a-5676-49c1-a364-ed8be624b194",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/share-point-dynamic-form.sppkg"
+  }
+}

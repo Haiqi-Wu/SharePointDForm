@@ -1,0 +1,19 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "useGulp": false,
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "22.16.0",
+    "sdksVersions": {},
+    "version": "1.22.0",
+    "libraryName": "share-point-dynamic-form",
+    "libraryId": "a2c59f79-b03b-419b-9028-bbd5dc3d0efd",
+    "environment": "spo",
+    "packageManager": "npm",
+    "solutionName": "SharePointDynamicForm",
+    "solutionShortDescription": "SharePointDynamicForm description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "componentType": "webpart"
+  }
+}
