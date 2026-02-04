@@ -42,6 +42,7 @@ export interface FormSchema {
 export interface FormTheme {
   layout?: 'stack' | 'grid';
   columns?: number;
+  labelPosition?: 'top' | 'left';
 }
 
 // ============================================================================

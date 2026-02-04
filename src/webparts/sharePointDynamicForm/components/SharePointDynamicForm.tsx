@@ -20,6 +20,7 @@ export interface SharePointDynamicFormContainerProps {
   hasTeamsContext: boolean;
   context: any;
   onSaveSchema: (schema: FormSchema) => void;
+  labelPosition?: 'top' | 'left';
 }
 
 export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormContainerProps> = ({
@@ -32,6 +33,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
   context,
   isDarkTheme,
   onSaveSchema,
+  labelPosition = 'top',
 }) => {
   const [schema, setSchema] = React.useState<FormSchema | null>(null);
   const [initialValues, setInitialValues] = React.useState<Record<string, any> | null>(null);
@@ -137,13 +139,16 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
         const lookupOptionsMap: Record<string, any[]> = {};
         for (const step of parsedSchema.steps) {
           for (const field of step.fields) {
+            console.log('Processing field:', { id: field.id, type: field.type, config: field.config });
             if (field.type === 'lookup' && field.config?.lookupList && field.config?.lookupField) {
               const options = await dataSource.getLookupChoices(field.config.lookupList, field.config.lookupField);
               lookupOptionsMap[field.id] = options;
+              console.log('Loaded lookup options for', field.id, ':', options);
             }
           }
         }
 
+        console.log('Final lookupOptionsMap:', lookupOptionsMap);
         setLookupOptions(lookupOptionsMap);
         setInitialValues(values);
       } catch (err: any) {
@@ -211,7 +216,15 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
             <DefaultButton onClick={onToggleDesignerMode}>返回</DefaultButton>
             <PrimaryButton onClick={() => {
               if (schema) {
-                onSaveSchema(schema);
+                // 确保 schema.theme 包含 labelPosition
+                const schemaToSave = {
+                  ...schema,
+                  theme: {
+                    ...schema.theme,
+                    labelPosition,
+                  },
+                };
+                onSaveSchema(schemaToSave);
                 // 保存后切换回表单显示模式
                 onToggleDesignerMode();
               }
@@ -283,7 +296,13 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
 
       {/* 表单渲染 */}
       <FormRenderer
-        schema={schema}
+        schema={{
+          ...schema,
+          theme: {
+            ...schema.theme,
+            labelPosition,
+          },
+        }}
         initialValues={initialValues || undefined}
         lookupOptions={lookupOptions}
         onResolveUsers={handleResolveUsers}

@@ -3,6 +3,19 @@
  */
 
 import * as React from 'react';
+import { FieldType } from '../core/types';
+import { ReactNode } from 'react';
+
+import { BaseFieldWrapper } from './BaseField';
+import { TextField } from './TextField';
+import { MultilineField } from './MultilineField';
+import { NumberField } from './NumberField';
+import { DateTimeField } from './DateTimeField';
+import { DropdownField } from './DropdownField';
+import { MultiSelectField } from './MultiSelectField';
+import { BooleanField } from './BooleanField';
+import { PersonField } from './PersonField';
+import { LookupField } from './LookupField';
 
 export { BaseFieldWrapper } from './BaseField';
 export type { BaseFieldProps } from './BaseField';
@@ -19,18 +32,6 @@ export type { PersonFieldValue } from './PersonField';
 export { LookupField } from './LookupField';
 export type { LookupOption } from './LookupField';
 
-import { TextField } from './TextField';
-import { MultilineField } from './MultilineField';
-import { NumberField } from './NumberField';
-import { DateTimeField } from './DateTimeField';
-import { DropdownField } from './DropdownField';
-import { MultiSelectField } from './MultiSelectField';
-import { BooleanField } from './BooleanField';
-import { PersonField } from './PersonField';
-import { LookupField } from './LookupField';
-import { FieldType } from '../core/types';
-import { ReactNode } from 'react';
-
 export interface FieldComponentProps {
   field: any;
   state: any;
@@ -40,6 +41,7 @@ export interface FieldComponentProps {
   disabled?: boolean;
   lookupOptions?: any[];
   onResolveUsers?: (filter: string) => Promise<any[]>;
+  labelPosition?: 'top' | 'left';
 }
 
 export const FieldComponents: Record<FieldType, React.ComponentType<any>> = {
@@ -60,5 +62,28 @@ export function getFieldComponent(type: FieldType): React.ComponentType<any> {
 
 export function renderField(props: FieldComponentProps): ReactNode {
   const Component = getFieldComponent(props.field.type);
-  return <Component {...props} />;
+
+  // 使用 BaseFieldWrapper 包裹所有字段，确保统一显示必填星号
+  return (
+    <BaseFieldWrapper
+      field={props.field}
+      state={props.state}
+      value={props.value}
+      onChange={props.onChange}
+      onBlur={props.onBlur}
+      disabled={props.disabled}
+      labelPosition={props.labelPosition}
+    >
+      <Component
+        field={props.field}
+        state={props.state}
+        value={props.value}
+        onChange={props.onChange}
+        onBlur={props.onBlur}
+        disabled={props.disabled}
+        lookupOptions={props.lookupOptions}
+        onResolveUsers={props.onResolveUsers}
+      />
+    </BaseFieldWrapper>
+  );
 }

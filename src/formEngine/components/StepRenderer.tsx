@@ -13,10 +13,11 @@ export interface StepRendererProps {
   onFieldBlur: (fieldId: string) => void;
   lookupOptions?: Record<string, any[]>;
   onResolveUsers?: (filter: string) => Promise<any[]>;
+  labelPosition?: 'top' | 'left';
 }
 
 export const StepRenderer: React.FC<StepRendererProps> = ({
-  step, fields, onFieldChange, onFieldBlur, lookupOptions, onResolveUsers,
+  step, fields, onFieldChange, onFieldBlur, lookupOptions, onResolveUsers, labelPosition = 'top',
 }) => {
   const visibleFields = step.fields.filter(field => {
     const fieldState = fields[field.id];
@@ -49,6 +50,7 @@ export const StepRenderer: React.FC<StepRendererProps> = ({
               onBlur={() => onFieldBlur(field.id)}
               lookupOptions={lookupOptions}
               onResolveUsers={onResolveUsers}
+              labelPosition={labelPosition}
             />
           );
         })}

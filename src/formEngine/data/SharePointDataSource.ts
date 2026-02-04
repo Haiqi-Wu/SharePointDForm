@@ -37,8 +37,22 @@ export class SharePointDataSource {
       )();
 
       // 过滤掉隐藏字段、基类型字段和系统字段
+      // 但保留 Title 字段（优先使用 Title，排除 LinkTitle 和 LinkTitleNoMenu 以避免重复）
+      const hasTitleField = fields.some((f: any) => f.InternalName === 'Title' && !f.Hidden);
+
       const filteredFields = fields
-        .filter((field: any) => !field.Hidden && !field.FromBaseType && !this.isSystemField(field.InternalName))
+        .filter((field: any) => {
+          // 如果已经有 Title 字段，跳过 LinkTitle 和 LinkTitleNoMenu
+          if (hasTitleField && (field.InternalName === 'LinkTitle' || field.InternalName === 'LinkTitleNoMenu')) {
+            return false;
+          }
+          // 保留 Title 字段（Title, LinkTitle, LinkTitleNoMenu）
+          if (field.InternalName === 'Title' || field.InternalName === 'LinkTitle' || field.InternalName === 'LinkTitleNoMenu') {
+            return !field.Hidden;
+          }
+          // 其他字段过滤掉隐藏、基类型和系统字段
+          return !field.Hidden && !field.FromBaseType && !this.isSystemField(field.InternalName);
+        })
         .map((field: any) => this.mapToFieldInfo(field));
 
       return filteredFields;
@@ -52,17 +66,22 @@ export class SharePointDataSource {
     const systemFields = [
       'ID', 'Created', 'Modified', 'Author', 'Editor', 'OData__UIVersionString',
       'Attachments', 'GUID', 'ContentType', 'AppAuthor', 'AppEditor', 'Edit',
-      'LinkTitleNoMenu', 'LinkTitle', 'ItemChildCount', 'FolderChildCount', 'ComplianceAssetId',
+      'ItemChildCount', 'FolderChildCount', 'ComplianceAssetId',
+      // 注意：LinkTitle 和 LinkTitleNoMenu 是实际的 Title 字段，不应被过滤
     ];
     return systemFields.includes(internalName);
   }
 
   private mapToFieldInfo(field: any): SPFieldInfo {
     const type = this.mapFieldType(field.TypeAsString);
+    // Title, LinkTitle 和 LinkTitleNoMenu 都映射为 "Title" 字段
+    const isTitleField = field.InternalName === 'Title' || field.InternalName === 'LinkTitle' || field.InternalName === 'LinkTitleNoMenu';
+    const internalName = isTitleField ? 'Title' : field.InternalName;
+    const title = isTitleField ? 'Title' : (field.Title || field.InternalName);
     return {
       id: field.Id,
-      internalName: field.InternalName,
-      title: field.Title || field.InternalName,
+      internalName,
+      title,
       type,
       required: field.Required || false,
       readOnly: field.ReadOnlyField || false,
@@ -126,7 +145,9 @@ export class SharePointDataSource {
 
   async getLookupChoices(lookupList: string, lookupField: string = 'Title'): Promise<any[]> {
     try {
+      console.log('getLookupChoices called with:', { lookupList, lookupField });
       const items = await this.sp.web.lists.getById(lookupList).items.select('Id', lookupField).top(5000)();
+      console.log('getLookupChoices result:', items);
       return items;
     } catch (error) {
       console.error(`Error fetching lookup choices from list ${lookupList}:`, error);

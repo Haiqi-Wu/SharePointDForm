@@ -21,6 +21,7 @@ export interface ISharePointDynamicFormWebPartProps {
   useItemId: boolean;
   itemId: number;
   isInDesignerMode: boolean;
+  labelPosition?: 'top' | 'left';
 }
 
 export interface IDropdownOption {
@@ -41,6 +42,7 @@ export default class SharePointDynamicFormWebPart extends BaseClientSideWebPart<
         isInDesignerMode: this.properties.isInDesignerMode ?? false,
         onToggleDesignerMode: () => this.toggleDesignerMode(),
         formSchemaJson: this.properties.formSchemaJson || '',
+        labelPosition: this.properties.labelPosition || 'top',
         listName: this.properties.listName || '',
         mode: this.properties.mode || 'new',
         useItemId: this.properties.useItemId || false,
@@ -167,6 +169,14 @@ export default class SharePointDynamicFormWebPart extends BaseClientSideWebPart<
                   label: '设计模式',
                   onText: '开启',
                   offText: '关闭',
+                }),
+                PropertyPaneDropdown('labelPosition', {
+                  label: '标签位置',
+                  options: [
+                    { key: 'top', text: '上方' },
+                    { key: 'left', text: '左侧' },
+                  ],
+                  selectedKey: this.properties.labelPosition || 'top',
                 }),
               ]
             },

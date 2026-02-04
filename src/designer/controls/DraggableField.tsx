@@ -53,6 +53,12 @@ export const DraggableField: React.FC<DraggableFieldProps> = ({ spField }) => {
       label: String(spField.title || spField.internalName),
       fieldName: String(spField.internalName),
       required: Boolean(spField.required),
+      // SP-specific config for lookups and choices
+      lookupList: spField.lookupList,
+      lookupField: spField.lookupField,
+      choices: spField.choices,
+      allowMultipleValues: spField.allowMultipleValues,
+      maxLength: spField.maxLength,
     },
   });
 

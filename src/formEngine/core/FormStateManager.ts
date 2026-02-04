@@ -179,21 +179,37 @@ export class FormStateManager {
   }
 
   private evaluateFieldConditions(field: any, context: Record<string, any>): { visible: boolean; required: boolean; readOnly: boolean } {
-    // 处理布尔值类型
+    // 处理 visible 属性
+    let visible: boolean;
     if (typeof field.visible === 'boolean') {
-      return {
-        visible: field.visible,
-        required: typeof field.required === 'boolean' ? field.required : false,
-        readOnly: typeof field.readOnly === 'boolean' ? field.readOnly : false,
-      };
+      visible = field.visible;
+    } else if (typeof field.visible === 'string') {
+      visible = this.conditionEngine.evaluate(field.visible, context);
+    } else {
+      visible = true;
     }
 
-    // 处理表达式类型
-    return {
-      visible: field.visible ? this.conditionEngine.evaluate(field.visible, context) : true,
-      required: field.required ? this.conditionEngine.evaluate(field.required, context) : false,
-      readOnly: field.readOnly ? this.conditionEngine.evaluate(field.readOnly, context) : false,
-    };
+    // 处理 required 属性
+    let required: boolean;
+    if (typeof field.required === 'boolean') {
+      required = field.required;
+    } else if (typeof field.required === 'string') {
+      required = this.conditionEngine.evaluate(field.required, context);
+    } else {
+      required = false;
+    }
+
+    // 处理 readOnly 属性
+    let readOnly: boolean;
+    if (typeof field.readOnly === 'boolean') {
+      readOnly = field.readOnly;
+    } else if (typeof field.readOnly === 'string') {
+      readOnly = this.conditionEngine.evaluate(field.readOnly, context);
+    } else {
+      readOnly = false;
+    }
+
+    return { visible, required, readOnly };
   }
 
   private reevaluateAllFields(): void {

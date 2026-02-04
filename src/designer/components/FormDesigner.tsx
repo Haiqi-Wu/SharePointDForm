@@ -18,7 +18,6 @@ export interface FormDesignerProps {
 }
 
 export const FormDesigner: React.FC<FormDesignerProps> = ({ schema, onChange, context, listName }) => {
-  const [activeId, setActiveId] = React.useState<string | null>(null);
   const [draggedField, setDraggedField] = React.useState<{ type: FieldType; label: string; fieldName: string } | null>(null);
   const [spFields, setSpFields] = React.useState<SPFieldInfo[]>([]);
   const [isLoadingFields, setIsLoadingFields] = React.useState(true);
@@ -63,7 +62,6 @@ export const FormDesigner: React.FC<FormDesignerProps> = ({ schema, onChange, co
   }, [context, listName]);
 
   const handleDragStart = (event: DragStartEvent): void => {
-    setActiveId(event.active.id as string);
     const data = event.active.data.current as { type: FieldType; label: string; fieldName: string } | undefined;
     if (data) setDraggedField(data);
   };
@@ -115,14 +113,23 @@ export const FormDesigner: React.FC<FormDesignerProps> = ({ schema, onChange, co
           onChange({ ...schema, steps: newSteps });
         }
       }
-      setActiveId(null);
       setDraggedField(null);
       return;
     }
 
     // 处理从字段面板拖拽新字段
     if (over && over.id.toString().startsWith('dropzone-')) {
-      const data = active.data.current as { type: FieldType; label: string; fieldName: string; required?: boolean } | undefined;
+      const data = active.data.current as {
+        type: FieldType;
+        label: string;
+        fieldName: string;
+        required?: boolean;
+        lookupList?: string;
+        lookupField?: string;
+        choices?: string[];
+        allowMultipleValues?: boolean;
+        maxLength?: number;
+      } | undefined;
       if (data) {
         const stepId = over.id.toString().replace('dropzone-', '');
         const stepIndex = schema.steps.findIndex(s => s.id === stepId);
@@ -144,13 +151,23 @@ export const FormDesigner: React.FC<FormDesignerProps> = ({ schema, onChange, co
 
           const fieldType = typeMapping[data.type] || 'text';
 
+          // 构建 config 对象，包含 SP 特定属性
+          const config: Record<string, any> = {};
+          if (data.lookupList) config.lookupList = data.lookupList;
+          if (data.lookupField) config.lookupField = data.lookupField;
+          if (data.choices && data.choices.length > 0) config.choices = data.choices;
+          if (data.allowMultipleValues) config.allowMultiple = data.allowMultipleValues;
+          if (data.maxLength) config.maxLength = data.maxLength;
+
           // 确保所有值都是正确的类型
           const newField = {
             id: `f_${Date.now()}`,
             type: fieldType,
             label: String(data.label || ''),
             fieldName: String(data.fieldName || ''),
-            required: typeof data.required === 'boolean' ? data.required : undefined,
+            // 直接使用 SharePoint 字段的必填设置
+            required: data.required,
+            config: Object.keys(config).length > 0 ? config : undefined,
           };
           const newSteps = [...schema.steps];
           newSteps[stepIndex] = { ...newSteps[stepIndex], fields: [...newSteps[stepIndex].fields, newField] };
@@ -158,7 +175,6 @@ export const FormDesigner: React.FC<FormDesignerProps> = ({ schema, onChange, co
         }
       }
     }
-    setActiveId(null);
     setDraggedField(null);
   };
 

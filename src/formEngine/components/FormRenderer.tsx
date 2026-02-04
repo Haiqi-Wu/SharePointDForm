@@ -137,7 +137,6 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
 
   const currentStepData = schema.steps[state.currentStep];
   const values = state.fields;
-  const canGoNext = state.currentStep < schema.steps.length - 1;
   const canGoPrev = state.currentStep > 0;
   const stepTitles = schema.steps.map(step => step.title);
 
@@ -160,7 +159,6 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
           currentStep={state.currentStep}
           totalSteps={schema.steps.length}
           stepTitles={stepTitles}
-          canGoNext={canGoNext}
           canGoPrev={canGoPrev}
           isValid={state.isValid}
           isSubmitting={state.isSubmitting}
@@ -179,6 +177,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
           onFieldBlur={handleFieldBlur}
           lookupOptions={lookupOptions}
           onResolveUsers={onResolveUsers}
+          labelPosition={schema.theme?.labelPosition}
         />
       </div>
 

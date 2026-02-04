@@ -28,21 +28,17 @@ export const TextField: React.FC<BaseFieldProps> = ({
   }, [value]);
 
   return (
-    <div className="form-field form-field--text">
-      <FluentTextField
-        label={field.label}
-        value={stringValue}
-        onChange={(_e, newValue) => {
-          onChange(newValue || '')
-        }}
-        onBlur={onBlur}
-        disabled={disabled || state.readOnly || state.disabled}
-        required={state.required}
-        placeholder={field.config?.placeholder}
-        maxLength={field.config?.maxLength}
-        type="text"
-        errorMessage={state.errors[0]}
-      />
-    </div>
+    <FluentTextField
+      value={stringValue}
+      onChange={(_e, newValue) => {
+        onChange(newValue || '')
+      }}
+      onBlur={onBlur}
+      disabled={disabled || state.readOnly || state.disabled}
+      placeholder={field.config?.placeholder}
+      maxLength={field.config?.maxLength}
+      type="text"
+      errorMessage={state.errors.length > 0 ? state.errors[0] : undefined}
+    />
   );
 };

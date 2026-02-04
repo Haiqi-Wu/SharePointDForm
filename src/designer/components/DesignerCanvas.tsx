@@ -7,7 +7,7 @@ import { FormSchema, FormField, FieldType, SPFieldInfo } from '../../formEngine/
 import { DropZone } from '../controls/DropZone';
 import { PropertyPanel } from './PropertyPanel';
 import { v4 as uuidv4 } from 'uuid';
-import { TextField } from '@fluentui/react';
+import { TextField, PrimaryButton } from '@fluentui/react';
 
 export interface DesignerCanvasProps {
   schema: FormSchema;
@@ -68,6 +68,24 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
     setSelectedField(field);
   };
 
+  const handleAddStep = (): void => {
+    const newStep = {
+      id: uuidv4(),
+      title: `步骤 ${schema.steps.length + 1}`,
+      description: '',
+      fields: [],
+    };
+    onChange({ ...schema, steps: [...schema.steps, newStep] });
+    setSelectedStepIndex(schema.steps.length);
+  };
+
+  const handleDeleteStep = (): void => {
+    if (schema.steps.length <= 1) return; // 至少保留一个步骤
+    const newSteps = schema.steps.filter((_, index) => index !== selectedStepIndex);
+    onChange({ ...schema, steps: newSteps });
+    setSelectedStepIndex(Math.max(0, selectedStepIndex - 1));
+  };
+
   const getStepTabStyle = (index: number): React.CSSProperties => ({
     padding: '8px 16px',
     background: index === selectedStepIndex ? '#0078d4' : 'white',
@@ -89,7 +107,8 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
         padding: '16px 24px',
         background: '#faf9f8',
         borderBottom: '1px solid #e1dfdd',
-        gap: '4px',
+        gap: '8px',
+        alignItems: 'center',
       }}>
         {schema.steps.map((step, index) => (
           <button
@@ -110,6 +129,43 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
             {step.title}
           </button>
         ))}
+        <PrimaryButton
+          onClick={handleAddStep}
+          styles={{
+            root: {
+              marginLeft: 'auto',
+              height: '32px',
+            },
+            label: {
+              fontSize: '13px',
+              fontWeight: 'normal',
+            },
+          }}
+        >
+          + 添加步骤
+        </PrimaryButton>
+        {schema.steps.length > 1 && (
+          <button
+            onClick={handleDeleteStep}
+            style={{
+              padding: '6px 12px',
+              background: 'white',
+              color: '#d13438',
+              border: '1px solid #d13438',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '13px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#fde7e9';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'white';
+            }}
+          >
+            删除步骤
+          </button>
+        )}
       </div>
 
       <div style={{ padding: '24px' }}>
