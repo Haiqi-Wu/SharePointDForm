@@ -9,7 +9,6 @@ import { FieldContainer } from './FieldContainer';
 export interface StepRendererProps {
   step: FormStep;
   fields: Record<string, FieldState>;
-  values: Record<string, any>;
   onFieldChange: (fieldId: string, value: any) => void;
   onFieldBlur: (fieldId: string) => void;
   lookupOptions?: Record<string, any[]>;
@@ -17,7 +16,7 @@ export interface StepRendererProps {
 }
 
 export const StepRenderer: React.FC<StepRendererProps> = ({
-  step, fields, values, onFieldChange, onFieldBlur, lookupOptions, onResolveUsers,
+  step, fields, onFieldChange, onFieldBlur, lookupOptions, onResolveUsers,
 }) => {
   const visibleFields = step.fields.filter(field => {
     const fieldState = fields[field.id];
@@ -45,7 +44,7 @@ export const StepRenderer: React.FC<StepRendererProps> = ({
               key={field.id}
               field={field}
               state={fieldState}
-              value={values[field.id]}
+              value={fieldState.value}
               onChange={(v) => onFieldChange(field.id, v)}
               onBlur={() => onFieldBlur(field.id)}
               lookupOptions={lookupOptions}

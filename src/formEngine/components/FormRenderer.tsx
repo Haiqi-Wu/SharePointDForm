@@ -175,7 +175,6 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
         <StepRenderer
           step={currentStepData}
           fields={values}
-          values={values}
           onFieldChange={handleFieldChange}
           onFieldBlur={handleFieldBlur}
           lookupOptions={lookupOptions}
