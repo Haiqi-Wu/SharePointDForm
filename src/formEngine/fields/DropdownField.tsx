@@ -25,7 +25,7 @@ export const DropdownField: React.FC<BaseFieldProps> = ({
         disabled={disabled || state.readOnly || state.disabled}
         required={state.required}
         placeholder={field.config?.placeholder || '请选择'}
-        errorMessage={state.errors[0]}
+        errorMessage={state.errors.length > 0 ? state.errors[0] : undefined}
       />
     </div>
   );

@@ -15,10 +15,13 @@ export interface FieldContainerProps {
   lookupOptions?: Record<string, any[]>;
   onResolveUsers?: (filter: string) => Promise<any[]>;
   labelPosition?: 'top' | 'left';
+  spfxContext?: any;
+  itemId?: number;
+  disabled?: boolean;
 }
 
 export const FieldContainer: React.FC<FieldContainerProps> = ({
-  field, state, value, onChange, onBlur, lookupOptions, onResolveUsers, labelPosition = 'top',
+  field, state, value, onChange, onBlur, lookupOptions, onResolveUsers, labelPosition = 'top', spfxContext, itemId, disabled,
 }) => {
   if (!state.visible) return null;
 
@@ -30,10 +33,12 @@ export const FieldContainer: React.FC<FieldContainerProps> = ({
         value,
         onChange,
         onBlur,
-        disabled: state.disabled || state.readOnly,
+        disabled: Boolean(disabled || state.disabled || state.readOnly),
         lookupOptions: lookupOptions?.[field.id],
         onResolveUsers,
         labelPosition,
+        spfxContext,
+        itemId,
       })}
     </div>
   );

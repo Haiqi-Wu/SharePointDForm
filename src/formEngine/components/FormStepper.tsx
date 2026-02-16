@@ -10,19 +10,26 @@ export interface FormStepperProps {
   totalSteps: number;
   stepTitles: string[];
   canGoPrev: boolean;
-  isValid: boolean;
   isSubmitting: boolean;
   onNext: () => void;
   onPrev: () => void;
   onSubmit: () => void;
   onStepClick?: (stepIndex: number) => void;
+  onCancel?: () => void;
+  onSaveDraft?: () => void;
+  readOnly?: boolean;
+  submitLabel?: string;
+  canSaveDraft?: boolean;
+  cancelLabel?: string;
 }
 
 export const FormStepper: React.FC<FormStepperProps> = ({
-  currentStep, totalSteps, stepTitles, canGoPrev, isValid, isSubmitting,
-  onNext, onPrev, onSubmit, onStepClick,
+  currentStep, totalSteps, stepTitles, canGoPrev, isSubmitting,
+  onNext, onPrev, onSubmit, onStepClick, onCancel, onSaveDraft, readOnly, submitLabel, canSaveDraft, cancelLabel,
 }) => {
   const isLastStep = currentStep === totalSteps - 1;
+  const finalSubmitLabel = submitLabel || '提交';
+  const finalCancelLabel = cancelLabel || '取消';
 
   const stepStyle: React.CSSProperties = {
     display: 'flex',
@@ -91,20 +98,28 @@ export const FormStepper: React.FC<FormStepperProps> = ({
         })}
       </div>
 
-      <div style={actionsStyle}>
-        <div>
-          {canGoPrev && <DefaultButton onClick={onPrev} disabled={isSubmitting}>上一步</DefaultButton>}
+      {!readOnly && (
+        <div style={actionsStyle}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {onCancel && <DefaultButton onClick={onCancel} disabled={isSubmitting}>{finalCancelLabel}</DefaultButton>}
+            {onSaveDraft && (
+              <DefaultButton onClick={onSaveDraft} disabled={isSubmitting || canSaveDraft === false}>
+                保存草稿
+              </DefaultButton>
+            )}
+            {canGoPrev && <DefaultButton onClick={onPrev} disabled={isSubmitting}>上一步</DefaultButton>}
+          </div>
+          <div>
+            {isLastStep ? (
+              <PrimaryButton onClick={onSubmit} disabled={isSubmitting}>
+                {isSubmitting ? '提交中...' : finalSubmitLabel}
+              </PrimaryButton>
+            ) : (
+              <PrimaryButton onClick={onNext} disabled={isSubmitting}>下一步</PrimaryButton>
+            )}
+          </div>
         </div>
-        <div>
-          {isLastStep ? (
-            <PrimaryButton onClick={onSubmit} disabled={!isValid || isSubmitting}>
-              {isSubmitting ? '提交中...' : '提交'}
-            </PrimaryButton>
-          ) : (
-            <PrimaryButton onClick={onNext} disabled={isSubmitting}>下一步</PrimaryButton>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 };

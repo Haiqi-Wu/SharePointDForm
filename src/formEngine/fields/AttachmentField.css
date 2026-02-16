@@ -1,0 +1,62 @@
+.spdf-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.spdf-attachments__picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.spdf-attachments__picker input[type="file"] {
+  padding: 4px;
+  border: 1px solid #c8c6c4;
+  border-radius: 2px;
+  background: #ffffff;
+}
+
+.spdf-attachments__list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.spdf-attachments__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.4;
+}
+
+.spdf-attachments__file {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 480px;
+}
+
+.spdf-attachments__empty {
+  color: #605e5c;
+}
+
+/* PnP ListItemAttachments overrides */
+.spdf-attachments [class^="ListItemAttachments_"] {
+  margin-bottom: 0;
+}
+
+.spdf-attachments [class^="documentCardWrapper_"] {
+  width: 100%;
+  min-width: 0;
+  margin-left: 0;
+}
+
+.spdf-attachments [class^="documentCard_"] {
+  max-width: 100%;
+}
+
+.spdf-attachments [class^="fileLabel_"] {
+  white-space: normal;
+  line-height: 1.4;
+}

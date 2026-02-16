@@ -62,9 +62,6 @@ export const DateTimeField: React.FC<BaseFieldProps> = ({
         showMonthPickerAsOverlay
         formatDate={isDateOnly ? (d) => format(d ?? new Date(), 'PPP') : (d) => format(d ?? new Date(), 'Pp')}
       />
-      {state.errors.length > 0 && (
-        <div className="form-field__error">{state.errors[0]}</div>
-      )}
     </div>
   );
 };

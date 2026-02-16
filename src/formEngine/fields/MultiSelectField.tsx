@@ -26,7 +26,6 @@ export const MultiSelectField: React.FC<BaseFieldProps> = ({
 
   return (
     <div className="form-field form-field--multiselect">
-      <label className={state.required ? 'ms-Label is-required' : 'ms-Label'}>{field.label}</label>
       <Stack tokens={{ childrenGap: 8 }}>
         {field.config.choices.map(choice => (
           <Checkbox
@@ -38,9 +37,6 @@ export const MultiSelectField: React.FC<BaseFieldProps> = ({
           />
         ))}
       </Stack>
-      {state.errors.length > 0 && (
-        <div className="form-field__error">{state.errors[0]}</div>
-      )}
     </div>
   );
 };

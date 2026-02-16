@@ -12,7 +12,6 @@ export const BooleanField: React.FC<BaseFieldProps> = ({
   return (
     <div className="form-field form-field--boolean">
       <Toggle
-        label={field.label}
         checked={value === true}
         onChange={(_ev, checked) => onChange(checked ?? false)}
         onBlur={onBlur}

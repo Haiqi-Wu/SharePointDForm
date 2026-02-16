@@ -3,19 +3,20 @@
  */
 
 import * as React from 'react';
-import { FormSchema, FormField, FieldType, SPFieldInfo } from '../../formEngine/core/types';
+import { FormSchema, FormField, SPFieldInfo, FieldType } from '../../formEngine/core/types';
 import { DropZone } from '../controls/DropZone';
 import { PropertyPanel } from './PropertyPanel';
 import { v4 as uuidv4 } from 'uuid';
-import { TextField, PrimaryButton } from '@fluentui/react';
+import { TextField, PrimaryButton, Label } from '@fluentui/react';
 
 export interface DesignerCanvasProps {
   schema: FormSchema;
   onChange: (schema: FormSchema) => void;
   spFields?: SPFieldInfo[];
+  listName?: string;
 }
 
-export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange, spFields }) => {
+export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange, spFields, listName }) => {
   // Ensure spFields is always an array
   const safeSpFields = Array.isArray(spFields) ? spFields : [];
   const [selectedStepIndex, setSelectedStepIndex] = React.useState(0);
@@ -31,15 +32,7 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
       </div>
     );
   }
-
-  const handleAddField = (type: FieldType): void => {
-    const newField: FormField = { id: uuidv4(), type, label: `新${type}字段`, fieldName: `Field_${uuidv4().substring(0, 8)}` };
-    const newSteps = [...schema.steps];
-    newSteps[selectedStepIndex] = { ...currentStep, fields: [...currentStep.fields, newField] };
-    onChange({ ...schema, steps: newSteps });
-    setSelectedField(newField);
-    setIsPropertyPanelOpen(true);
-  };
+  const allFields = schema.steps.flatMap(s => s.fields).filter((f): f is FormField => f !== null && f.type !== 'newline');
 
   const handleSelectField = (field: FormField): void => {
     setSelectedField(field);
@@ -48,7 +41,25 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
 
   const handleDeleteField = (fieldId: string): void => {
     const newSteps = [...schema.steps];
-    newSteps[selectedStepIndex] = { ...currentStep, fields: currentStep.fields.filter(f => f.id !== fieldId) };
+
+    // 检查是否为网格布局
+    const themeLayout = schema.theme?.layout;
+    const themeColumns = schema.theme?.columns;
+    const isGridLayout = themeLayout === 'grid' && themeColumns && themeColumns > 1;
+
+    if (isGridLayout) {
+      // 网格布局：删除字段但保留 null 占位符
+      const stepFields = [...currentStep.fields];
+      const index = stepFields.findIndex(f => f !== null && f.id === fieldId);
+      if (index >= 0) {
+        stepFields[index] = null; // 替换为 null 而不是删除
+        newSteps[selectedStepIndex] = { ...currentStep, fields: stepFields };
+      }
+    } else {
+      // 垂直堆叠布局：过滤掉该字段和 null 值
+      newSteps[selectedStepIndex] = { ...currentStep, fields: currentStep.fields.filter(f => f !== null && f.id !== fieldId) };
+    }
+
     onChange({ ...schema, steps: newSteps });
     if (selectedField?.id === fieldId) {
       setSelectedField(null);
@@ -59,7 +70,7 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
   const handleSaveField = (field: FormField): void => {
     const newSteps = [...schema.steps];
     const stepFields = [...newSteps[selectedStepIndex].fields];
-    const index = stepFields.findIndex(f => f.id === field.id);
+    const index = stepFields.findIndex(f => f !== null && f.id === field.id);
     if (index >= 0) {
       stepFields[index] = field;
       newSteps[selectedStepIndex] = { ...newSteps[selectedStepIndex], fields: stepFields };
@@ -68,12 +79,144 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
     setSelectedField(field);
   };
 
+  const handleAddField = (
+    index: number,
+    spField: any,
+    options?: { mode?: 'replace' | 'insert-row'; insertAt?: number; column?: number }
+  ): void => {
+    let insertIndex = index;
+    const isCustom = Boolean(spField?.isCustom) || spField?.type === 'richtext';
+    if (!isCustom) {
+      // 检查是否为附件字段且是否已存在
+      const isAttachmentField = spField.internalName === 'Attachments';
+      if (isAttachmentField) {
+        const hasExistingAttachment = schema.steps.some(step =>
+          step.fields.some(field => field && field.fieldName === 'Attachments')
+        );
+        if (hasExistingAttachment) {
+          alert('附件字段已存在');
+          return;
+        }
+      }
+    }
+
+    // SPFieldType 到 FormField type 的映射
+    const typeMapping: Record<string, FieldType> = {
+      'Text': 'text',
+      'Note': 'multiline',
+      'Number': 'number',
+      'Integer': 'number',
+      'DateTime': 'datetime',
+      'Choice': 'dropdown',
+      'MultiChoice': 'multiselect',
+      'Lookup': 'lookup',
+      'User': 'person',
+      'UserMulti': 'person',
+      'Boolean': 'boolean',
+      'URL': 'url',
+      'Hyperlink': 'url',
+      'Image': 'image',
+      'TaxonomyFieldType': 'taxonomy',
+      'TaxonomyFieldTypeMulti': 'taxonomy',
+      'Taxonomy': 'taxonomy',
+      'TaxonomyMulti': 'taxonomy',
+      'Attachments': 'attachment',
+    };
+
+    const fieldType = isCustom ? (spField.type as FieldType) : (typeMapping[spField.type] || 'text');
+
+    // 构建 config 对象
+    const config: Record<string, any> = {};
+    if (!isCustom) {
+      if (spField.lookupList) config.lookupList = spField.lookupList;
+      if (spField.lookupField) config.lookupField = spField.lookupField;
+      if (spField.choices && spField.choices.length > 0) {
+        config.choices = spField.choices;
+      }
+      if (spField.allowMultipleValues) config.allowMultiple = spField.allowMultipleValues;
+      if (spField.maxLength) config.maxLength = spField.maxLength;
+      if (spField.termSetId) config.termSetId = spField.termSetId;
+      // 为附件字段添加 listName
+      if (spField.internalName === 'Attachments' && listName) {
+        config.listName = listName;
+      }
+    }
+
+    const fieldName = isCustom
+      ? (spField.fieldName || `custom_${spField.type}_${Date.now()}`)
+      : spField.internalName;
+
+    // 创建新字段
+    const newField: FormField = {
+      id: `f_${Date.now()}`,
+      type: fieldType,
+      label: String(spField.title ?? spField.label ?? spField.internalName ?? spField.fieldName ?? ''),
+      fieldName: String(fieldName || ''),
+      required: Boolean(spField.required),
+      config: Object.keys(config).length > 0 ? config : undefined,
+    };
+
+    // 插入字段到指定位置
+    const newSteps = [...schema.steps];
+    let stepFields = [...currentStep.fields];
+
+    // 对于网格布局，insertIndex 是网格位置索引
+    const theme = schema.theme;
+    const themeLayout = theme?.layout;
+    const themeColumns = theme?.columns;
+    const isGridLayout = themeLayout === 'grid' && themeColumns && themeColumns > 1;
+
+    if (isGridLayout) {
+      // 网格布局：根据模式替换空位或插入整行
+      const workingFields: (FormField | null)[] = [...stepFields];
+      const cols = themeColumns || 1;
+
+      if (options?.mode === 'insert-row' && cols > 1) {
+        const insertAt = Math.max(0, options.insertAt ?? 0);
+        const column = Math.max(0, Math.min(cols - 1, options.column ?? 0));
+
+        // 确保插入点之前有足够占位符
+        while (workingFields.length < insertAt) {
+          workingFields.push(null);
+        }
+
+        const newRow: (FormField | null)[] = Array.from({ length: cols }, (_, i) => (i === column ? newField : null));
+        workingFields.splice(insertAt, 0, ...newRow);
+      } else {
+        // 替换空位（按钮位置 -> 字段）
+        while (workingFields.length <= insertIndex) {
+          workingFields.push(null);
+        }
+        workingFields[insertIndex] = newField;
+      }
+
+      newSteps[selectedStepIndex] = { ...currentStep, fields: workingFields };
+    } else {
+      // 垂直堆叠布局：直接插入到指定位置，过滤掉 null
+      const actualFields = stepFields.filter((f): f is FormField => f !== null && f.type !== 'newline');
+      const safeInsertIndex = Math.min(insertIndex, actualFields.length);
+      actualFields.splice(safeInsertIndex, 0, newField);
+      newSteps[selectedStepIndex] = { ...currentStep, fields: actualFields };
+    }
+
+    onChange({ ...schema, steps: newSteps });
+  };
+
   const handleAddStep = (): void => {
+    const themeLayout = schema.theme?.layout;
+    const themeColumns = schema.theme?.columns;
+    const isGridLayout = themeLayout === 'grid' && themeColumns && themeColumns > 1;
+
+    // 网格布局：初始化为 null 占位符数组
+    const initialFields = isGridLayout
+      ? Array.from({ length: themeColumns }, () => null)
+      : [];
+
     const newStep = {
       id: uuidv4(),
       title: `步骤 ${schema.steps.length + 1}`,
       description: '',
-      fields: [],
+      fields: initialFields,
     };
     onChange({ ...schema, steps: [...schema.steps, newStep] });
     setSelectedStepIndex(schema.steps.length);
@@ -198,11 +341,167 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
           />
         </div>
 
+        {/* 步骤可见性配置 - 只在单个步骤时显示 */}
+        {schema.steps.length === 1 && (
+          <div style={{
+            marginBottom: '24px',
+            paddingBottom: '16px',
+            borderBottom: '1px solid #e1dfdd',
+          }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={currentStep.visible !== false}
+                onChange={(e) => {
+                  const newSteps = [...schema.steps];
+                  newSteps[selectedStepIndex] = { ...currentStep, visible: e.target.checked };
+                  onChange({ ...schema, steps: newSteps });
+                }}
+                style={{ cursor: 'pointer' }}
+              />
+              <span style={{ fontSize: 14, fontWeight: 500 }}>显示此步骤</span>
+            </label>
+            <p style={{ margin: '4px 0 0 24px', fontSize: '12px', color: '#605e5c' }}>
+              取消勾选后，此步骤将默认隐藏，可通过其他字段的配置来控制显示（例如：点击按钮后显示）
+            </p>
+          </div>
+        )}
+
+        {/* 表单布局配置 */}
+        <div style={{
+          display: 'flex',
+          gap: '16px',
+          marginBottom: '24px',
+          paddingBottom: '16px',
+          borderBottom: '1px solid #e1dfdd',
+          alignItems: 'center',
+        }}>
+          <div style={{ flex: 1, maxWidth: 200 }}>
+            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14 }}>表单布局</label>
+            <select
+              value={schema.theme?.layout || 'stack'}
+              onChange={(e) => {
+                const newLayout = e.target.value as 'stack' | 'grid';
+                const newColumns = schema.theme?.columns || 3;
+
+                // 如果切换到网格布局，需要初始化当前步骤的字段数组
+                let updatedSteps = [...schema.steps];
+                if (newLayout === 'grid' && newColumns > 1) {
+                  // 切换到网格布局：为当前步骤添加 null 占位符
+                  const stepFields = currentStep.fields;
+                  const actualFields = stepFields.filter((f): f is FormField => f !== null);
+
+                  // 如果字段数少于列数，添加 null 占位符
+                  if (actualFields.length < newColumns) {
+                    const paddedFields: (FormField | null)[] = [...actualFields];
+                    while (paddedFields.length < newColumns) {
+                      paddedFields.push(null);
+                    }
+                    updatedSteps[selectedStepIndex] = {
+                      ...currentStep,
+                      fields: paddedFields
+                    };
+                  }
+                } else if (newLayout === 'stack') {
+                  // 切换到垂直堆叠：移除所有 null 占位符
+                  const stepFields = currentStep.fields;
+                  const actualFields = stepFields.filter((f): f is FormField => f !== null);
+                  updatedSteps[selectedStepIndex] = {
+                    ...currentStep,
+                    fields: actualFields
+                  };
+                }
+
+                onChange({
+                  ...schema,
+                  theme: {
+                    ...schema.theme,
+                    layout: newLayout,
+                  },
+                  steps: updatedSteps,
+                });
+              }}
+              style={{
+                width: '100%',
+                padding: '6px 12px',
+                border: '1px solid #8a8886',
+                borderRadius: '4px',
+                fontSize: 14,
+              }}
+            >
+              <option value="stack">垂直堆叠</option>
+              <option value="grid">网格布局</option>
+            </select>
+          </div>
+          {(schema.theme?.layout === 'grid') && (
+            <div style={{ flex: 1, maxWidth: 200 }}>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14 }}>列数</label>
+              <select
+                value={schema.theme?.columns || 1}
+                onChange={(e) => {
+                  const newColumns = parseInt(e.target.value, 10);
+
+                  // 调整当前步骤的字段数组以适应新的列数
+                  const stepFields = currentStep.fields;
+                  const actualFields = stepFields.filter((f): f is FormField => f !== null);
+
+                  // 计算需要的总位置数（向上取整到整行）
+                  const currentRows = Math.ceil(actualFields.length / newColumns);
+                  const targetPositions = Math.max(currentRows * newColumns, newColumns);
+
+                  // 重建字段数组，保留 null 占位符
+                  const rebuiltFields: (FormField | null)[] = [];
+                  for (let i = 0; i < targetPositions; i++) {
+                    if (i < actualFields.length) {
+                      rebuiltFields.push(actualFields[i]);
+                    } else {
+                      rebuiltFields.push(null);
+                    }
+                  }
+
+                  const newSteps = [...schema.steps];
+                  newSteps[selectedStepIndex] = {
+                    ...currentStep,
+                    fields: rebuiltFields
+                  };
+
+                  onChange({
+                    ...schema,
+                    theme: {
+                      ...schema.theme,
+                      columns: newColumns,
+                    },
+                    steps: newSteps,
+                  });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '6px 12px',
+                  border: '1px solid #8a8886',
+                  borderRadius: '4px',
+                  fontSize: 14,
+                }}
+              >
+                <option value={1}>1列</option>
+                <option value={2}>2列</option>
+                <option value={3}>3列</option>
+                <option value={4}>4列</option>
+              </select>
+            </div>
+          )}
+          {/* 已移除换行符按钮 */}
+        </div>
+
         <DropZone
-          stepId={currentStep.id}
           fields={currentStep.fields}
+          allFields={allFields}
           onFieldSelect={handleSelectField}
           onFieldDelete={handleDeleteField}
+          onFieldChange={handleSaveField}
+          onAddField={handleAddField}
+          layout={schema.theme?.layout}
+          columns={schema.theme?.columns}
+          spFields={safeSpFields}
         />
       </div>
 
@@ -210,6 +509,7 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
         isOpen={isPropertyPanelOpen}
         field={selectedField || undefined}
         spFields={safeSpFields}
+        allFields={allFields}
         onSave={handleSaveField}
         onClose={() => { setIsPropertyPanelOpen(false); setSelectedField(null); }}
       />

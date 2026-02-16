@@ -17,6 +17,35 @@ export class ValidationEngine {
   validateField(field: FormField, value: any, context: Record<string, any>): string[] {
     const errors: string[] = [];
 
+    // 检查 required 属性
+    if (field.required !== undefined && field.required !== null && field.required !== false) {
+      let isRequired: boolean;
+      if (typeof field.required === 'boolean') {
+        isRequired = field.required;
+      } else if (typeof field.required === 'string') {
+        // 处理简单的 'true'/'false' 字符串
+        const trimmed = field.required.trim().toLowerCase();
+        if (trimmed === 'true') {
+          isRequired = true;
+        } else if (trimmed === 'false') {
+          isRequired = false;
+        } else {
+          // 作为条件表达式计算
+          isRequired = this.conditionEngine.evaluate(field.required, context);
+        }
+      } else {
+        isRequired = Boolean(field.required);
+      }
+
+      if (isRequired) {
+        const requiredError = this.validateRequired(value, `${field.label}为必填项`);
+        if (requiredError) {
+          errors.push(requiredError);
+        }
+      }
+    }
+
+    // 检查 validation 规则
     if (!field.validation || field.validation.length === 0) return errors;
 
     for (const rule of field.validation) {
@@ -37,7 +66,11 @@ export class ValidationEngine {
 
     for (const step of this.schema.steps) {
       for (const field of step.fields) {
+        if (!field) continue; // 过滤 null 占位符
         if (visibleFields && !visibleFields.has(field.id)) continue;
+
+        // 跳过富文本字段的验证，它们只是显示内容
+        if (field.type === 'richtext') continue;
 
         const value = fieldValues[field.id];
         const fieldErrors = this.validateField(field, value, fieldValues);

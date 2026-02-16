@@ -5,6 +5,7 @@ import {
   type IPropertyPaneConfiguration,
   PropertyPaneDropdown,
   PropertyPaneToggle,
+  PropertyPaneTextField,
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
@@ -22,6 +23,13 @@ export interface ISharePointDynamicFormWebPartProps {
   itemId: number;
   isInDesignerMode: boolean;
   labelPosition?: 'top' | 'left';
+  // 按钮配置
+  submitButtonLabel?: string;
+  showCancelButton?: boolean;
+  cancelButtonLabel?: string;
+  cancelRedirectUrl?: string;
+  submitRedirectUrl?: string;
+  onSubmitMessage?: string;
 }
 
 export interface IDropdownOption {
@@ -51,6 +59,13 @@ export default class SharePointDynamicFormWebPart extends BaseClientSideWebPart<
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
         context: this.context,
         onSaveSchema: (schema) => this.saveSchema(schema),
+        // 按钮配置
+        submitButtonLabel: this.properties.submitButtonLabel,
+        showCancelButton: this.properties.showCancelButton,
+        cancelButtonLabel: this.properties.cancelButtonLabel,
+        cancelRedirectUrl: this.properties.cancelRedirectUrl,
+        submitRedirectUrl: this.properties.submitRedirectUrl,
+        onSubmitMessage: this.properties.onSubmitMessage,
       }
     );
 
@@ -177,6 +192,45 @@ export default class SharePointDynamicFormWebPart extends BaseClientSideWebPart<
                     { key: 'left', text: '左侧' },
                   ],
                   selectedKey: this.properties.labelPosition || 'top',
+                }),
+              ]
+            },
+            {
+              groupName: '按钮配置',
+              groupFields: [
+                PropertyPaneTextField('submitButtonLabel', {
+                  label: '提交按钮文字',
+                  placeholder: '提交（默认）',
+                  value: this.properties.submitButtonLabel,
+                }),
+                PropertyPaneToggle('showCancelButton', {
+                  label: '显示取消按钮',
+                  onText: '显示',
+                  offText: '隐藏',
+                  checked: this.properties.showCancelButton,
+                }),
+                PropertyPaneTextField('cancelButtonLabel', {
+                  label: '取消按钮文字',
+                  placeholder: '取消（默认）',
+                  value: this.properties.cancelButtonLabel,
+                }),
+                PropertyPaneTextField('cancelRedirectUrl', {
+                  label: '取消后跳转URL',
+                  placeholder: '留空则关闭表单',
+                  value: this.properties.cancelRedirectUrl,
+                }),
+                PropertyPaneTextField('submitRedirectUrl', {
+                  label: '提交后跳转URL',
+                  placeholder: '留空则显示成功消息',
+                  value: this.properties.submitRedirectUrl,
+                }),
+                PropertyPaneTextField('onSubmitMessage', {
+                  label: '提交成功消息',
+                  placeholder: '表单提交成功！（默认）',
+                  value: this.properties.onSubmitMessage,
+                  multiline: true,
+                  resizable: true,
+                  rows: 2,
                 }),
               ]
             },

@@ -5,36 +5,55 @@
 import * as React from 'react';
 import { TextField as FluentTextField } from '@fluentui/react';
 import { BaseFieldProps } from './BaseField';
+import { useDebouncedCallback } from '../hooks/useDebounce';
 
 export const TextField: React.FC<BaseFieldProps> = ({
   field, state, value, onChange, onBlur, disabled,
 }) => {
+  // 本地输入值（即时更新 UI）
+  const [localValue, setLocalValue] = React.useState<string>('');
+
   // 确保 value 是字符串类型
   const stringValue = React.useMemo(() => {
     if (value == null) return '';
-
-    // 如果已经是字符串，直接返回
     if (typeof value === 'string') return value;
-
-    // 如果是对象（如 Person/Lookup 字段），提取显示值
     if (typeof value === 'object') {
       const obj = value as Record<string, unknown>;
-      // 优先使用 Title，然后是 displayName，最后是其他属性
       return String(obj.Title || obj.displayName || obj.Id || obj.value || JSON.stringify(value));
     }
-
-    // 其他类型转换为字符串
     return String(value);
   }, [value]);
 
+  // 同步外部值到本地
+  React.useEffect(() => {
+    setLocalValue(stringValue);
+  }, [stringValue]);
+
+  // 防抖回调
+  const debouncedOnChange = useDebouncedCallback(onChange, 300);
+
+  // 处理输入变化
+  const handleChange = React.useCallback((_e: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
+    const newStr = newValue || '';
+    setLocalValue(newStr); // 即时更新 UI
+    debouncedOnChange(newStr); // 防抖更新表单状态
+  }, [debouncedOnChange]);
+
+  // 处理失焦：立即同步值并触发 onBlur
+  const handleBlur = React.useCallback(() => {
+    // 立即同步最新值
+    onChange(localValue);
+    onBlur?.();
+  }, [localValue, onChange, onBlur]);
+
   return (
     <FluentTextField
-      value={stringValue}
-      onChange={(_e, newValue) => {
-        onChange(newValue || '')
-      }}
-      onBlur={onBlur}
+      label={field.label}
+      value={localValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
       disabled={disabled || state.readOnly || state.disabled}
+      required={state.required}
       placeholder={field.config?.placeholder}
       maxLength={field.config?.maxLength}
       type="text"

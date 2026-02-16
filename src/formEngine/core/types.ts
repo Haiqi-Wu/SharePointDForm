@@ -11,13 +11,19 @@ export type FormMode = 'new' | 'edit' | 'view';
 export type FieldType =
   | 'text'
   | 'multiline'
+  | 'richtext'
   | 'number'
   | 'datetime'
   | 'dropdown'
   | 'multiselect'
   | 'lookup'
   | 'person'
-  | 'boolean';
+  | 'boolean'
+  | 'image'
+  | 'url'
+  | 'taxonomy'
+  | 'attachment'
+  | 'newline';
 
 export type FilterExpression = string;
 
@@ -35,7 +41,11 @@ export interface FormSchema {
   steps: FormStep[];
   submitButtonLabel?: string;
   showCancelButton?: boolean;
+  cancelButtonLabel?: string;
+  cancelRedirectUrl?: string;
   onSubmitMessage?: string;
+  submitRedirectUrl?: string;
+  submitRedirectDelayMs?: number;
   theme?: FormTheme;
 }
 
@@ -53,7 +63,8 @@ export interface FormStep {
   id: string;
   title: string;
   description?: string;
-  fields: FormField[];
+  fields: (FormField | null)[]; // 允许 null 占位符以保持网格布局的正确位置
+  visible?: boolean; // 步骤是否可见（用于欢迎页等场景）
 }
 
 export interface FormField {
@@ -67,11 +78,15 @@ export interface FormField {
   onChange?: FieldAction[];
   validation?: ValidationRule[];
   config?: FieldConfig;
+  columnSpan?: number; // 字段占据的列数，默认为1（占据整行或根据网格列数）
+  defaultValue?: any; // 字段的默认值（用于富文本编辑器等自定义字段）
+  startNewRow?: boolean; // 是否在网格布局中开始新行
 }
 
 export interface FieldConfig {
   maxLength?: number;
   placeholder?: string;
+  helpText?: string;
   min?: number;
   max?: number;
   decimals?: number;
@@ -81,6 +96,10 @@ export interface FieldConfig {
   lookupList?: string;
   lookupField?: string;
   allowMultiple?: boolean;
+  termSetId?: string;
+  listName?: string;
+  listId?: string;
+  itemId?: number;
 }
 
 export type FieldAction =
@@ -189,7 +208,12 @@ export enum SPFieldType {
   UserMulti = 'UserMulti',
   Boolean = 'Boolean',
   URL = 'URL',
+  Hyperlink = 'Hyperlink',
+  Image = 'Image',
   Calculated = 'Calculated',
+  Taxonomy = 'Taxonomy',
+  TaxonomyMulti = 'TaxonomyMulti',
+  Attachments = 'Attachments',
 }
 
 export interface SPFieldInfo {
@@ -204,6 +228,8 @@ export interface SPFieldInfo {
   lookupField?: string;
   allowMultipleValues?: boolean;
   maxLength?: number;
+  textField?: string;
+  termSetId?: string;
 }
 
 // ============================================================================

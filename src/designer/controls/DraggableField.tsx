@@ -3,12 +3,54 @@
  */
 
 import * as React from 'react';
-import { useDraggable } from '@dnd-kit/core';
-import { FieldType, SPFieldInfo, SPFieldType } from '../../formEngine/core/types';
+import { SPFieldInfo, SPFieldType, FieldType } from '../../formEngine/core/types';
 
 export interface DraggableFieldProps {
   spField: SPFieldInfo;
 }
+
+// 自定义字段类型接口
+export interface CustomFieldType {
+  type: FieldType;
+  label: string;
+  icon: string;
+  description: string;
+}
+
+// 自定义字段组件
+export interface DraggableCustomFieldProps {
+  fieldType: CustomFieldType;
+}
+
+export const DraggableCustomField: React.FC<DraggableCustomFieldProps> = ({ fieldType }) => {
+  const [isHovered, setIsHovered] = React.useState(false);
+
+  const customFieldStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '12px 16px',
+    background: isHovered ? '#bae7ff' : '#e6f7ff',
+    border: isHovered ? '1px solid #40a9ff' : '1px solid #91d5ff',
+    borderRadius: '4px',
+    cursor: 'default',
+    marginBottom: '8px',
+    transition: 'all 0.2s',
+    opacity: 1,
+  };
+
+  return (
+    <div
+      style={customFieldStyle}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      title={fieldType.description}
+    >
+      <span style={{ fontSize: '18px' }}>{fieldType.icon}</span>
+      <span style={{ flex: 1, fontSize: '14px' }}>{fieldType.label}</span>
+    </div>
+  );
+};
 
 // 字段类型图标映射
 const getFieldIcon = (type: SPFieldType): string => {
@@ -24,6 +66,13 @@ const getFieldIcon = (type: SPFieldType): string => {
     'User': '👤',
     'UserMulti': '👥',
     'Boolean': '☑️',
+    'URL': '🔗',
+    'Hyperlink': '🔗',
+    'Image': '🖼️',
+    'Taxonomy': '🏷️',
+    'TaxonomyMulti': '🏷️',
+    'Attachments': '📎',
+    'Calculated': '📊',
   };
   return iconMap[type] || '📝';
 };
@@ -36,7 +85,7 @@ const draggableFieldStyle: React.CSSProperties = {
   background: '#f3f2f1',
   border: '1px solid #e1dfdd',
   borderRadius: '4px',
-  cursor: 'grab',
+  cursor: 'default',
   marginBottom: '8px',
 };
 
@@ -46,32 +95,13 @@ const draggableFieldHoverStyle: React.CSSProperties = {
 };
 
 export const DraggableField: React.FC<DraggableFieldProps> = ({ spField }) => {
-  const { attributes, isDragging, listeners, setNodeRef } = useDraggable({
-    id: `spfield-${spField.internalName}`,
-    data: {
-      type: String(spField.type),
-      label: String(spField.title || spField.internalName),
-      fieldName: String(spField.internalName),
-      required: Boolean(spField.required),
-      // SP-specific config for lookups and choices
-      lookupList: spField.lookupList,
-      lookupField: spField.lookupField,
-      choices: spField.choices,
-      allowMultipleValues: spField.allowMultipleValues,
-      maxLength: spField.maxLength,
-    },
-  });
-
   const [isHovered, setIsHovered] = React.useState(false);
 
   return (
     <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
       style={{
         ...(isHovered ? draggableFieldHoverStyle : draggableFieldStyle),
-        opacity: isDragging ? 0.5 : 1,
+        cursor: 'default',
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -121,6 +151,11 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ spFields, isLoading 
   // Ensure spFields is always an array to prevent undefined errors
   const fields = Array.isArray(spFields) ? spFields : [];
 
+  // 自定义字段类型
+  const customFieldTypes: CustomFieldType[] = [
+    { type: 'richtext', label: '富文本编辑器', icon: '📝', description: '用于输入说明文字、提示信息等' },
+  ];
+
   if (isLoading) {
     return (
       <div style={fieldPaletteStyle}>
@@ -147,29 +182,40 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ spFields, isLoading 
     );
   }
 
-  if (fields.length === 0) {
-    return (
-      <div style={fieldPaletteStyle}>
-        <div style={headerStyle}>
-          <h3 style={h3Style}>列表字段</h3>
-        </div>
-        <div style={{ padding: '24px', textAlign: 'center', color: '#605e5c' }}>
-          未加载到字段
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div style={fieldPaletteStyle}>
-      <div style={headerStyle}>
-        <h3 style={h3Style}>列表字段</h3>
-        <p style={pStyle}>拖拽字段到画布 ({fields.length})</p>
+      {/* 自定义字段类型 */}
+      <div style={{ marginBottom: '24px' }}>
+        <div style={headerStyle}>
+          <h3 style={{ ...h3Style, color: '#0078d4' }}>自定义字段</h3>
+          <p style={{ ...pStyle, color: '#0078d4' }}>
+            通过右侧按钮添加字段（不保存到 SharePoint）
+          </p>
+        </div>
+        <div style={fieldsContainerStyle}>
+          {customFieldTypes.map(fieldType => (
+            <DraggableCustomField key={fieldType.type} fieldType={fieldType} />
+          ))}
+        </div>
       </div>
-      <div style={fieldsContainerStyle}>
-        {fields.map(spField => (
-          <DraggableField key={spField.internalName} spField={spField} />
-        ))}
+
+      {/* SharePoint 列表字段 */}
+      <div>
+        <div style={headerStyle}>
+          <h3 style={h3Style}>SharePoint 字段</h3>
+          <p style={pStyle}>可添加字段（{fields.length}）</p>
+        </div>
+        <div style={fieldsContainerStyle}>
+          {fields.length === 0 ? (
+            <div style={{ padding: '12px', textAlign: 'center', color: '#605e5c', fontSize: '12px' }}>
+              已没有可添加的字段
+            </div>
+          ) : (
+            fields.map(spField => (
+              <DraggableField key={spField.internalName} spField={spField} />
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

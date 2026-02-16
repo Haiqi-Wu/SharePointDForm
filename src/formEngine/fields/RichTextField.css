@@ -1,0 +1,168 @@
+/* Quill Editor Custom Styles for FluentUI Integration */
+
+.ql-container {
+  font-family: 'Segoe UI', 'Segoe UI Web (West European)', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+}
+
+.ql-toolbar {
+  border: 1px solid #e1dfdd !important;
+  border-radius: 4px 4px 0 0 !important;
+  background: #faf9f8 !important;
+  padding: 8px !important;
+}
+
+.ql-toolbar.ql-snow {
+  border: 1px solid #e1dfdd !important;
+}
+
+.ql-container.ql-snow {
+  border: 1px solid #8a8886 !important;
+  border-radius: 0 0 4px 4px !important;
+  background: white !important;
+}
+
+.ql-editor {
+  min-height: 200px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ql-editor.ql-blank::before {
+  color: #605e5c;
+  font-style: normal;
+  left: 15px;
+}
+
+/* 优化工具栏按钮样式 */
+.ql-toolbar button {
+  border: 1px solid transparent !important;
+  border-radius: 3px !important;
+  margin: 0 2px !important;
+  padding: 4px 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.ql-toolbar button:hover {
+  background: #f3f2f1 !important;
+}
+
+.ql-toolbar button.ql-active {
+  background: #edebe9 !important;
+  color: #0078d4 !important;
+}
+
+.ql-toolbar button.ql-selected {
+  background: #c7e0f4 !important;
+  color: #0078d4 !important;
+}
+
+/* 下拉菜单样式 */
+.ql-tooltip {
+  border: 1px solid #e1dfdd !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* 优化链接输入框 */
+.ql-toolbar input.ql-tooltip {
+  border: 1px solid #8a8886 !important;
+  border-radius: 3px !important;
+  padding: 4px 8px !important;
+}
+
+/* 禁用状态样式 */
+.ql-disabled.ql-container {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* 优化编辑器内链接样式 */
+.ql-editor a {
+  color: #0078d4;
+  text-decoration: underline;
+}
+
+.ql-editor.ql-blank {
+  color: #605e5c;
+}
+
+/* Placeholder 样式 */
+.ql-placeholder {
+  color: #605e5c;
+  font-style: italic;
+}
+
+/* 富文本显示样式（用于表单渲染） */
+.richtext-display {
+  font-family: 'Segoe UI', 'Segoe UI Web (West European)', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+  line-height: 1.6;
+  color: #323130;
+}
+
+.richtext-display h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin: 0.67em 0;
+}
+
+.richtext-display h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 0.75em 0;
+}
+
+.richtext-display h3 {
+  font-size: 1.17em;
+  font-weight: bold;
+  margin: 0.83em 0;
+}
+
+.richtext-display p {
+  margin: 1em 0;
+}
+
+.richtext-display ul,
+.richtext-display ol {
+  margin: 1em 0;
+  padding-left: 40px;
+}
+
+.richtext-display a {
+  color: #0078d4;
+  text-decoration: underline;
+}
+
+.richtext-display strong {
+  font-weight: bold;
+}
+
+.richtext-display em {
+  font-style: italic;
+}
+
+.richtext-display blockquote {
+  margin: 1em 0;
+  padding-left: 16px;
+  border-left: 4px solid #e1dfdd;
+  color: #605e5c;
+}
+
+.richtext-display code {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  background: #f3f2f1;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+.richtext-display pre {
+  background: #f3f2f1;
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.richtext-display img {
+  max-width: 100%;
+  height: auto;
+}

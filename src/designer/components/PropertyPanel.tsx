@@ -6,17 +6,42 @@
 import * as React from 'react';
 import { Panel, TextField, PrimaryButton, DefaultButton, Label, Text } from '@fluentui/react';
 import { FormField, SPFieldInfo } from '../../formEngine/core/types';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import '../../formEngine/fields/RichTextField.css';
+import { ConditionBuilder } from './ConditionBuilder';
+
+const toolbarOptions = {
+  container: [
+    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ 'color': [] }, { 'background': [] }],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+    [{ 'indent': '-1'}, { 'indent': '+1' }],
+    [{ 'align': [] }],
+    ['link', 'image'],
+    ['clean'],
+  ],
+};
+
+const quillModules = {
+  toolbar: toolbarOptions,
+  clipboard: {
+    matchVisual: false,
+  },
+};
 
 export interface PropertyPanelProps {
   isOpen: boolean;
   field?: FormField;
   spFields?: SPFieldInfo[];
+  allFields?: FormField[];
   onSave: (field: FormField) => void;
   onClose: () => void;
 }
 
 export const PropertyPanel: React.FC<PropertyPanelProps> = ({
-  isOpen, field, spFields, onSave, onClose,
+  isOpen, field, spFields, allFields = [], onSave, onClose,
 }) => {
   const [editedField, setEditedField] = React.useState<FormField | null>(null);
 
@@ -55,6 +80,11 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
     'lookup': '查找',
     'person': '人员',
     'boolean': '是/否',
+    'image': '图片',
+    'url': '超链接',
+    'taxonomy': '托管元数据',
+    'attachment': '附件',
+    'richtext': '富文本',
   };
 
   return (
@@ -113,34 +143,98 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
               </div>
             </div>
 
-            {/* 可见性条件配置 */}
-            <div>
-              <Label style={{ marginBottom: 8, fontWeight: 600 }}>可见性条件</Label>
+            {/* 列跨度配置 */}
+            <div style={{ marginBottom: 20 }}>
+              <Label style={{ marginBottom: 8, fontWeight: 600 }}>列跨度</Label>
               <Text variant="small" block style={{ marginBottom: 12, color: '#605e5c' }}>
-                设置字段何时显示。留空则始终显示。
+                设置字段占据的列数。仅在网格布局下生效。
               </Text>
               <TextField
-                value={typeof editedField.visible === 'string' ? editedField.visible : (editedField.visible === false ? 'false' : '')}
+                type="number"
+                value={editedField.columnSpan?.toString() || '1'}
                 onChange={(_e, v) => {
-                  const trimmed = v?.trim();
-                  if (trimmed === '' || trimmed === 'false') {
-                    setEditedField({ ...editedField, visible: false });
-                  } else {
-                    setEditedField({ ...editedField, visible: trimmed || undefined });
-                  }
+                  const span = parseInt(v || '1', 10);
+                  setEditedField({
+                    ...editedField,
+                    columnSpan: isNaN(span) ? 1 : Math.max(1, span),
+                  });
                 }}
-                placeholder="例如：Department eq 'IT'"
-                multiline
-                rows={3}
+                placeholder="1"
+                min={1}
                 styles={{ root: { marginBottom: 8 } }}
               />
               <Text variant="xSmall" block style={{ color: '#605e5c' }}>
-                💡 提示：直接使用字段内部名称（如 Title、Department），支持 eq, ne, gt, lt, ge, le, and, or, not, contains, startswith 等操作符
-              </Text>
-              <Text variant="xSmall" block style={{ color: '#605e5c', marginTop: 4 }}>
-                示例：Department eq 'IT' 或 Status ne 'Closed' 或 startswith(Title, 'Re')
+                例如：在3列布局中，设置为2则该字段占据2列宽度
               </Text>
             </div>
+
+            {/* 字段提示/说明 */}
+            <div style={{ marginBottom: 20 }}>
+              <Label style={{ marginBottom: 8, fontWeight: 600 }}>字段提示</Label>
+              <Text variant="small" block style={{ marginBottom: 12, color: '#605e5c' }}>
+                显示在字段下方的说明文字，可用于示例或填写提示。
+              </Text>
+              <TextField
+                multiline
+                value={editedField.config?.helpText || ''}
+                onChange={(_e, v) => {
+                  setEditedField({
+                    ...editedField,
+                    config: {
+                      ...(editedField.config || {}),
+                      helpText: v || '',
+                    },
+                  });
+                }}
+                placeholder="例如：请输入完整部门名称"
+              />
+            </div>
+
+            {/* 富文本内容编辑 */}
+            {editedField.type === 'richtext' && (
+              <div style={{ marginBottom: 20 }}>
+                <Label style={{ marginBottom: 8, fontWeight: 600 }}>富文本内容</Label>
+                <Text variant="small" block style={{ marginBottom: 12, color: '#605e5c' }}>
+                  编辑富文本字段的内容，这些内容将在表单中显示。
+                </Text>
+                <ReactQuill
+                  theme="snow"
+                  value={editedField.defaultValue || ''}
+                  onChange={(content) => {
+                    setEditedField({
+                      ...editedField,
+                      defaultValue: content,
+                    });
+                  }}
+                  modules={quillModules}
+                  formats={[
+                    'header', 'font', 'size',
+                    'bold', 'italic', 'underline', 'strike', 'blockquote',
+                    'list', 'bullet', 'indent',
+                    'link', 'image',
+                    'color', 'background',
+                    'align',
+                    'clean',
+                  ]}
+                  style={{ minHeight: '200px' }}
+                  placeholder="在此输入富文本内容..."
+                />
+              </div>
+            )}
+
+            {/* 可见性条件配置 */}
+            <ConditionBuilder
+              allFields={allFields}
+              condition={typeof editedField.visible === 'string' ? editedField.visible : ''}
+              onChange={(condition) => {
+                const trimmed = condition?.trim();
+                if (trimmed === '') {
+                  setEditedField({ ...editedField, visible: true });
+                } else {
+                  setEditedField({ ...editedField, visible: trimmed });
+                }
+              }}
+            />
 
             {!spField && (
               <div style={{ marginTop: 16, padding: '12px', background: '#fff4ce', border: '1px solid #ffb900', borderRadius: '4px', fontSize: '12px' }}>

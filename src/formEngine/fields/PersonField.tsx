@@ -1,101 +1,106 @@
 /**
- * Person Field
+ * Person Field - Using PnP PeoplePicker
  */
 
 import * as React from 'react';
-import { NormalPeoplePicker, IBasePickerSuggestionsProps, IPersonaProps } from '@fluentui/react';
 import { BaseFieldProps } from './BaseField';
-
-const suggestionProps: IBasePickerSuggestionsProps = {
-  suggestionsHeaderText: '建议的人员',
-  noResultsFoundText: '未找到结果',
-  loadingText: '加载中...',
-  searchForMoreText: '搜索更多结果',
-  resultsMaximumNumber: 20,
-};
+import { PeoplePicker, PrincipalType } from '@pnp/spfx-controls-react/lib/PeoplePicker';
 
 export interface PersonFieldValue {
-  id?: number;
-  displayName?: string;
-  email?: string;
+  Id?: number;
+  Title?: string;
+  Email?: string;
 }
 
-const convertItem = (item: unknown): IPersonaProps => {
-  if (typeof item === 'string') {
-    return { key: item, text: item } as IPersonaProps;
-  }
-  const obj = item as Record<string, unknown>;
-  if (obj.Id || obj.id) {
-    const id = obj.Id || obj.id;
-    const title = obj.Title || obj.displayName || obj.email || String(id);
-    return { key: String(id), text: String(title) } as IPersonaProps;
-  }
-  return { key: String(item), text: String(item) } as IPersonaProps;
-};
+export interface PersonFieldProps extends BaseFieldProps {
+  spfxContext?: any; // 添加 SPFx context prop
+}
 
-export const PersonField: React.FC<BaseFieldProps & {
-  onResolveUsers?: (filter: string) => Promise<PersonFieldValue[]>;
-}> = ({
-  field, state, value, onChange, onBlur, disabled, onResolveUsers,
+export const PersonField: React.FC<PersonFieldProps> = ({
+  field, state, value, onChange, disabled, spfxContext,
 }) => {
-  const convertToPickerItems = React.useCallback((val: unknown): IPersonaProps[] => {
+  // 转换值格式以匹配 PnP PeoplePicker 的期望格式
+  const convertToPnPFormat = React.useCallback((val: any): any[] => {
     if (!val) return [];
-    if (Array.isArray(val)) {
-      return val.map(item => convertItem(item));
+
+    // 单个用户对象
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+      if (val.Id && val.Title) {
+        return [{
+          Id: val.Id,
+          LoginName: val.Email || '',
+          Email: val.Email || '',
+          Title: val.Title,
+          PrincipalType: PrincipalType.User
+        }];
+      }
     }
-    return [convertItem(val)];
+
+    // 数组格式
+    if (Array.isArray(val)) {
+      return val.map(item => ({
+        Id: item.Id || item.id,
+        LoginName: item.Email || '',
+        Email: item.Email || '',
+        Title: item.Title || item.displayName || '',
+        PrincipalType: PrincipalType.User
+      }));
+    }
+
+    return [];
   }, []);
 
-  const [pickerItems, setPickerItems] = React.useState<IPersonaProps[]>(convertToPickerItems(value));
+  const selectedUsers = React.useMemo(() => convertToPnPFormat(value), [value, convertToPnPFormat]);
 
-  React.useEffect(() => {
-    setPickerItems(convertToPickerItems(value));
-  }, [value, convertToPickerItems]);
-
-  const handleChange = (items?: IPersonaProps[]): void => {
-    const safeItems = items || [];
-    setPickerItems(safeItems);
+  const handleChange = (items: any[]): void => {
     const allowMultiple = field.config?.allowMultiple ?? false;
 
     if (allowMultiple) {
-      const converted = safeItems.map(item => ({ Id: parseInt(String(item.key), 10), Title: item.text }));
+      // 多选：保存为对象数组
+      const converted = items.map(item => ({
+        Id: item.Id,
+        Title: item.Title
+      }));
       onChange(converted);
     } else {
-      if (safeItems.length > 0) {
-        onChange({ Id: parseInt(String(safeItems[0].key), 10), Title: safeItems[0].text });
+      // 单选：保存单个对象或 null
+      if (items.length > 0) {
+        onChange({
+          Id: items[0].Id,
+          Title: items[0].Title
+        });
       } else {
         onChange(null);
       }
     }
   };
 
-  const handleResolveSuggestions = async (filter: string): Promise<IPersonaProps[]> => {
-    if (onResolveUsers) {
-      const users = await onResolveUsers(filter);
-      return users.map(user => convertItem(user));
-    }
-    return [];
-  };
-
   const allowMultiple = field.config?.allowMultiple ?? false;
 
+  // 如果没有 context，显示提示
+  if (!spfxContext) {
+    return (
+      <div style={{ color: '#d13438', padding: '8px', background: '#fde7e9', borderRadius: '4px' }}>
+        ⚠️ 缺少 SharePoint Context
+      </div>
+    );
+  }
+
+  // 获取 web absolute URL
+  const webAbsoluteUrl = spfxContext.pageContext?.web?.absoluteUrl;
+
   return (
-    <div className="form-field form-field--person">
-      <label className={state.required ? 'ms-Label is-required' : 'ms-Label'}>{field.label}</label>
-      <NormalPeoplePicker
-        onChange={handleChange}
-        onResolveSuggestions={handleResolveSuggestions}
-        pickerSuggestionsProps={suggestionProps}
-        pickerCalloutProps={{ doNotLayer: true }}
-        onBlur={onBlur}
-        disabled={disabled || state.readOnly || state.disabled}
-        defaultSelectedItems={pickerItems}
-        removeButtonAriaLabel="移除"
-        resolveDelay={300}
-      />
-      {state.errors.length > 0 && (
-        <div className="form-field__error">{state.errors[0]}</div>
-      )}
-    </div>
+    <PeoplePicker
+      context={spfxContext}
+      personSelectionLimit={allowMultiple ? undefined : 1}
+      onChange={handleChange}
+      defaultSelectedUsers={selectedUsers}
+      key={selectedUsers.map((u: any) => u.Id).join(',') || 'empty'} // 当用户改变时强制重新渲染
+      placeholder={field.config?.placeholder || '输入姓名或邮箱搜索（至少3个字符）...'}
+      disabled={disabled || state.readOnly || state.disabled}
+      principalTypes={[PrincipalType.User]}
+      ensureUser={true}
+      webAbsoluteUrl={webAbsoluteUrl}
+    />
   );
 };

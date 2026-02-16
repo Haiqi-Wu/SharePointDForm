@@ -15,11 +15,8 @@ export interface LookupOption {
 export const LookupField: React.FC<BaseFieldProps & { lookupOptions: LookupOption[] }> = ({
   field, state, value, onChange, onBlur, disabled, lookupOptions,
 }) => {
-  console.log('LookupField rendered:', { fieldId: field.id, lookupOptions, value });
-
   const options: IDropdownOption[] = React.useMemo(() => {
     if (!lookupOptions) {
-      console.log('lookupOptions is undefined or null');
       return [];
     }
     const opts = lookupOptions.map(opt => ({
@@ -27,7 +24,6 @@ export const LookupField: React.FC<BaseFieldProps & { lookupOptions: LookupOptio
       text: opt.Title,
       data: opt,
     }));
-    console.log('Processed dropdown options:', opts);
     return opts;
   }, [lookupOptions]);
 
@@ -50,7 +46,7 @@ export const LookupField: React.FC<BaseFieldProps & { lookupOptions: LookupOptio
         disabled={disabled || state.readOnly || state.disabled}
         required={state.required}
         placeholder={field.config?.placeholder || '请选择'}
-        errorMessage={state.errors[0]}
+        errorMessage={state.errors.length > 0 ? state.errors[0] : undefined}
       />
     </div>
   );

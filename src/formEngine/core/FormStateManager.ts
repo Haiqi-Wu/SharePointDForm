@@ -36,6 +36,9 @@ export class FormStateManager {
   getAllFieldValues(): Record<string, any> {
     const values: Record<string, any> = {};
     for (const [fieldId, fieldState] of Object.entries(this.state.fields)) {
+      const field = this.findFieldById(fieldId);
+      // 跳过富文本字段，它们只是显示内容，不应该提交到 SharePoint
+      if (field && field.type === 'richtext') continue;
       values[fieldId] = fieldState.value;
     }
     return values;
@@ -79,24 +82,51 @@ export class FormStateManager {
   }
 
   nextStep(): boolean {
-    if (this.state.currentStep < this.schema.steps.length - 1) {
-      this.state.currentStep++;
-      this.notifyStateListeners();
-      return true;
+    // 找到下一个可见的步骤
+    for (let i = this.state.currentStep + 1; i < this.schema.steps.length; i++) {
+      if (this.schema.steps[i].visible !== false) {
+        this.state.currentStep = i;
+        this.notifyStateListeners();
+        return true;
+      }
     }
     return false;
   }
 
   prevStep(): boolean {
-    if (this.state.currentStep > 0) {
-      this.state.currentStep--;
-      this.notifyStateListeners();
-      return true;
+    // 找到上一个可见的步骤
+    for (let i = this.state.currentStep - 1; i >= 0; i--) {
+      if (this.schema.steps[i].visible !== false) {
+        this.state.currentStep = i;
+        this.notifyStateListeners();
+        return true;
+      }
     }
     return false;
   }
 
   goToStep(stepIndex: number): boolean {
+    // 如果目标步骤不可见，找到最近的可见步骤
+    if (this.schema.steps[stepIndex]?.visible === false) {
+      // 尝试向前找可见步骤
+      for (let i = stepIndex - 1; i >= 0; i--) {
+        if (this.schema.steps[i].visible !== false) {
+          this.state.currentStep = i;
+          this.notifyStateListeners();
+          return true;
+        }
+      }
+      // 如果向前找不到，尝试向后找
+      for (let i = stepIndex + 1; i < this.schema.steps.length; i++) {
+        if (this.schema.steps[i].visible !== false) {
+          this.state.currentStep = i;
+          this.notifyStateListeners();
+          return true;
+        }
+      }
+      return false;
+    }
+
     if (stepIndex >= 0 && stepIndex < this.schema.steps.length) {
       this.state.currentStep = stepIndex;
       this.notifyStateListeners();
@@ -147,7 +177,12 @@ export class FormStateManager {
 
     for (const step of this.schema.steps) {
       for (const field of step.fields) {
-        const initialValue = initialValues?.[field.fieldName] ?? this.getDefaultValue(field);
+        if (!field) continue; // 过滤 null 占位符
+        const hasFieldNameValue = initialValues && Object.prototype.hasOwnProperty.call(initialValues, field.fieldName);
+        const hasFieldIdValue = initialValues && Object.prototype.hasOwnProperty.call(initialValues, field.id);
+        const initialValue = hasFieldNameValue
+          ? initialValues![field.fieldName]
+          : (hasFieldIdValue ? initialValues![field.id] : this.getDefaultValue(field));
         const evaluation = this.evaluateFieldConditions(field, context);
 
         fields[field.id] = {
@@ -164,15 +199,28 @@ export class FormStateManager {
       }
     }
 
+    // 找到第一个可见的步骤作为当前步骤
+    let initialStepIndex = 0;
+    for (let i = 0; i < this.schema.steps.length; i++) {
+      if (this.schema.steps[i].visible !== false) {
+        initialStepIndex = i;
+        break;
+      }
+    }
+
     return {
       fields,
-      currentStep: 0,
+      currentStep: initialStepIndex,
       isSubmitting: false,
       isValid: true,
     };
   }
 
   private getDefaultValue(field: any): any {
+    // 如果字段定义了 defaultValue，优先使用
+    if (field.defaultValue !== undefined) {
+      return field.defaultValue;
+    }
     if (field.type === 'boolean') return false;
     if (field.type === 'multiselect') return [];
     return '';
@@ -191,12 +239,24 @@ export class FormStateManager {
 
     // 处理 required 属性
     let required: boolean;
-    if (typeof field.required === 'boolean') {
+    if (field.required === undefined || field.required === null) {
+      required = false; // 默认非必填
+    } else if (typeof field.required === 'boolean') {
       required = field.required;
     } else if (typeof field.required === 'string') {
-      required = this.conditionEngine.evaluate(field.required, context);
+      // 处理简单的 'true'/'false' 字符串
+      const trimmed = field.required.trim().toLowerCase();
+      if (trimmed === 'true') {
+        required = true;
+      } else if (trimmed === 'false') {
+        required = false;
+      } else {
+        // 作为条件表达式计算
+        required = this.conditionEngine.evaluate(field.required, context);
+      }
     } else {
-      required = false;
+      // 任何其他真值都视为必填
+      required = Boolean(field.required);
     }
 
     // 处理 readOnly 属性
@@ -217,6 +277,7 @@ export class FormStateManager {
 
     for (const step of this.schema.steps) {
       for (const field of step.fields) {
+        if (!field) continue; // 过滤 null 占位符
         const fieldState = this.state.fields[field.id];
         if (!fieldState) continue;
 
@@ -232,7 +293,10 @@ export class FormStateManager {
     const context: Record<string, any> = {};
     for (const [fieldId, fieldState] of Object.entries(this.state.fields)) {
       const field = this.findFieldById(fieldId);
-      if (field) context[field.fieldName] = fieldState.value;
+      // 排除富文本字段，它们只是显示内容，不参与条件表达式计算
+      if (field && field.type !== 'richtext') {
+        context[field.fieldName] = fieldState.value;
+      }
     }
     return context;
   }
@@ -331,7 +395,7 @@ export class FormStateManager {
   private findFieldById(fieldId: string): any {
     for (const step of this.schema.steps) {
       for (const field of step.fields) {
-        if (field.id === fieldId) return field;
+        if (field && field.id === fieldId) return field; // 添加 null 检查
       }
     }
     return null;

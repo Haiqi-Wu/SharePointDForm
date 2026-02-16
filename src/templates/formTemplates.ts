@@ -14,9 +14,9 @@ export const PurchaseRequestTemplate: FormSchema = {
     id: 'step1',
     title: '基本信息',
     fields: [
-      { id: 'f1', type: 'text', label: '标题', fieldName: 'Title', required: 'true' },
-      { id: 'f2', type: 'dropdown', label: '类别', fieldName: 'Category', required: 'true', config: { choices: ['设备', '软件', '服务'] } },
-      { id: 'f3', type: 'number', label: '金额', fieldName: 'Amount', required: 'true', config: { min: 0, decimals: 2 } },
+      { id: 'f1', type: 'text', label: '标题', fieldName: 'Title', required: true },
+      { id: 'f2', type: 'dropdown', label: '类别', fieldName: 'Category', required: true, config: { choices: ['设备', '软件', '服务'] } },
+      { id: 'f3', type: 'number', label: '金额', fieldName: 'Amount', required: true, config: { min: 0, decimals: 2 } },
       { id: 'f4', type: 'multiline', label: '说明', fieldName: 'Description' },
     ],
   }],
@@ -31,9 +31,9 @@ export const EmployeeInfoTemplate: FormSchema = {
     id: 'step1',
     title: '基本信息',
     fields: [
-      { id: 'f1', type: 'text', label: '姓名', fieldName: 'Title', required: 'true' },
-      { id: 'f2', type: 'dropdown', label: '部门', fieldName: 'Department', required: 'true', config: { choices: ['技术部', '人事部', '财务部'] } },
-      { id: 'f3', type: 'person', label: '直属领导', fieldName: 'Manager', required: 'true' },
+      { id: 'f1', type: 'text', label: '姓名', fieldName: 'Title', required: true },
+      { id: 'f2', type: 'dropdown', label: '部门', fieldName: 'Department', required: true, config: { choices: ['技术部', '人事部', '财务部'] } },
+      { id: 'f3', type: 'person', label: '直属领导', fieldName: 'Manager', required: true },
     ],
   }],
 };
