@@ -1,28 +1,17 @@
 /**
- * Image Field - File upload with preview
- * Supports uploading images to SharePoint library and URL input
+ * Image Field - Using PnP ImagePicker control
+ * SharePoint Online native image picker experience
  */
 
 import * as React from 'react';
-import {
-  Label,
-  TextField,
-  IconButton,
-  ProgressIndicator,
-  PrimaryButton,
-  Stack,
-  Image,
-  ImageFit,
-  MessageBar,
-  MessageBarType,
-  Icon,
-} from '@fluentui/react';
+import { Label, MessageBar, MessageBarType } from '@fluentui/react';
+import { ImagePicker, IFilePickerResult } from '@pnp/spfx-controls-react/lib/ImagePicker';
 import { BaseFieldProps } from './BaseField';
+import { WebPartContext } from '@microsoft/sp-webpart-base';
 import { spfi, SPFx } from '@pnp/sp';
 import '@pnp/sp/webs';
 import '@pnp/sp/files';
 import '@pnp/sp/folders';
-import { WebPartContext } from '@microsoft/sp-webpart-base';
 
 export interface ImageFieldValue {
   serverRelativeUrl?: string;
@@ -36,48 +25,14 @@ export interface ImageFieldProps extends BaseFieldProps {
 
 const IMAGE_LIBRARY = 'SiteAssets';
 
-// Fluent UI 样式
-const styles = {
-  uploadArea: {
-    border: '1px dashed #8a8886',
-    borderRadius: '2px',
-    padding: '24px',
-    textAlign: 'center' as const,
-    backgroundColor: '#faf9f8',
-    cursor: 'pointer',
-    transition: 'all 0.2s',
-  },
-  uploadAreaHover: {
-    borderColor: '#0078d4',
-    backgroundColor: '#f3f2f1',
-  },
-  imagePreview: {
-    position: 'relative' as const,
-    display: 'inline-block',
-    maxWidth: '200px',
-    maxHeight: '150px',
-  },
-  imageContainer: {
-    border: '1px solid #edebe9',
-    borderRadius: '2px',
-    padding: '8px',
-    display: 'inline-block',
-    backgroundColor: '#fff',
-  },
-};
-
 export const ImageField: React.FC<ImageFieldProps> = ({
   field, state, value, onChange, disabled, spfxContext,
 }) => {
-  const [uploadProgress, setUploadProgress] = React.useState<number>(0);
-  const [isUploading, setIsUploading] = React.useState(false);
-  const [uploadError, setUploadError] = React.useState<string | null>(null);
-  const [isDragOver, setIsDragOver] = React.useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [error, setError] = React.useState<string | null>(null);
 
   // Extract image URL from value
   const imageUrl = React.useMemo(() => {
-    if (!value) return '';
+    if (!value) return undefined;
     if (typeof value === 'string') return value;
     if (value.serverRelativeUrl) {
       if (spfxContext?.pageContext?.web?.absoluteUrl) {
@@ -89,70 +44,69 @@ export const ImageField: React.FC<ImageFieldProps> = ({
       return value.serverRelativeUrl;
     }
     if (value.url) return value.url;
-    return '';
+    return undefined;
   }, [value, spfxContext]);
 
-  const fileName = React.useMemo(() => {
-    if (!value) return '';
-    if (value.fileName) return value.fileName;
-    if (typeof value === 'string') {
-      const parts = value.split('/');
-      return parts[parts.length - 1] || '';
-    }
-    if (value.serverRelativeUrl) {
-      const parts = value.serverRelativeUrl.split('/');
-      return parts[parts.length - 1] || '';
-    }
-    if (value.url) {
-      const parts = value.url.split('/');
-      return parts[parts.length - 1] || '';
-    }
-    return '';
-  }, [value]);
-
-  // Handle file upload
-  const uploadFile = async (file: File): Promise<void> => {
+  const handleFileSelected = async (file: IFilePickerResult): Promise<void> => {
     if (!spfxContext) return;
 
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
-    if (!allowedTypes.includes(file.type)) {
-      setUploadError('请选择有效的图片文件 (JPEG, PNG, GIF, WebP, BMP)');
-      return;
-    }
-
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-      setUploadError('图片文件大小不能超过 10MB');
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadError(null);
-    setUploadProgress(0);
-
     try {
+      setError(null);
+
+      // If file is already selected from SharePoint (has serverRelativeUrl)
+      if (file.fileAbsoluteUrl) {
+        const serverRelUrl = file.fileAbsoluteUrl;
+        const webUrl = spfxContext.pageContext.web.absoluteUrl;
+        
+        // Extract relative URL if it's absolute
+        let relativeUrl = serverRelUrl;
+        if (serverRelUrl.startsWith('http')) {
+          try {
+            const url = new URL(serverRelUrl);
+            relativeUrl = url.pathname;
+          } catch {
+            // keep as is
+          }
+        }
+
+        onChange({
+          serverRelativeUrl: relativeUrl,
+          fileName: file.fileName,
+          url: file.fileAbsoluteUrl,
+        });
+        return;
+      }
+
+      // If file is from local (needs upload)
+      const fileContent = await file.downloadFileContent();
+      if (!fileContent) {
+        setError('无法读取文件内容');
+        return;
+      }
+
       const sp = spfi().using(SPFx(spfxContext));
       const webUrl = spfxContext.pageContext.web.absoluteUrl;
       const serverRelativeUrl = spfxContext.pageContext.web.serverRelativeUrl;
 
       const timestamp = Date.now();
       const randomSuffix = Math.random().toString(36).substring(2, 8);
-      const ext = file.name.split('.').pop() || 'jpg';
+      const ext = file.fileName.split('.').pop() || 'jpg';
       const uniqueFileName = `img_${timestamp}_${randomSuffix}.${ext}`;
       const folderPath = `${serverRelativeUrl === '/' ? '' : serverRelativeUrl}/${IMAGE_LIBRARY}/FormImages`;
 
+      // Ensure folder exists
       try {
         await sp.web.getFolderByServerRelativePath(folderPath)();
       } catch {
         await sp.web.folders.addUsingPath(folderPath);
       }
 
+      // Upload file
       await sp.web.getFolderByServerRelativePath(folderPath).files.addUsingPath(
         uniqueFileName,
-        file,
+        fileContent,
         { Overwrite: true }
       );
-      setUploadProgress(100);
 
       const fileServerRelUrl = `${folderPath}/${uniqueFileName}`;
       onChange({
@@ -162,170 +116,92 @@ export const ImageField: React.FC<ImageFieldProps> = ({
       });
     } catch (err: any) {
       console.error('Image upload failed:', err);
-      setUploadError(err?.message || '上传图片失败');
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      setError(err?.message || '上传图片失败');
     }
   };
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>): void => {
-    const file = event.target.files?.[0];
-    if (file) {
-      void uploadFile(file);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent): void => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent): void => {
-    e.preventDefault();
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent): void => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      void uploadFile(file);
-    }
-  };
-
-  const handleUrlChange = (_event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string): void => {
-    if (!newValue) {
-      onChange(null);
-    } else {
-      onChange({ url: newValue });
-    }
-  };
-
-  const handleRemove = (): void => {
+  const handleDeleteFile = (): void => {
     onChange(null);
-    setUploadError(null);
-  };
-
-  const handleUploadClick = (): void => {
-    fileInputRef.current?.click();
+    setError(null);
   };
 
   const isReadOnly = disabled || state.readOnly || state.disabled;
-  const canUpload = spfxContext && !isReadOnly && !isUploading;
+
+  // In read-only mode, just display the image
+  if (isReadOnly) {
+    return (
+      <div>
+        <Label>{field.label}</Label>
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={field.label}
+            style={{ maxWidth: '200px', maxHeight: '200px', objectFit: 'contain' }}
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        ) : (
+          <span style={{ color: '#666' }}>无图片</span>
+        )}
+        {state.errors.length > 0 && (
+          <div style={{ color: '#a80000', fontSize: 12, marginTop: 4 }}>
+            {state.errors[0]}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // In design mode without context, show placeholder
+  if (!spfxContext) {
+    return (
+      <div>
+        <Label required={state.required}>{field.label}</Label>
+        <div style={{ 
+          padding: '40px', 
+          border: '1px dashed #c8c8c8', 
+          textAlign: 'center',
+          backgroundColor: '#f8f8f8',
+        }}>
+          <span style={{ color: '#666' }}>图片选择器在运行模式下可用</span>
+        </div>
+        {state.errors.length > 0 && (
+          <div style={{ color: '#a80000', fontSize: 12, marginTop: 4 }}>
+            {state.errors[0]}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <Stack tokens={{ childrenGap: 8 }}>
-      {/* Label */}
-      <Label required={state.required} disabled={isReadOnly}>
-        {field.label}
-      </Label>
-
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={handleFileSelect}
-        disabled={isUploading || isReadOnly}
-      />
-
-      {/* Upload progress */}
-      {isUploading && (
-        <ProgressIndicator
-          label="正在上传..."
-          percentComplete={uploadProgress / 100}
-        />
-      )}
-
-      {/* Error message */}
-      {uploadError && (
-        <MessageBar messageBarType={MessageBarType.error} onDismiss={() => setUploadError(null)}>
-          {uploadError}
-        </MessageBar>
-      )}
-
-      {/* Image preview or upload area */}
-      {imageUrl ? (
-        <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 12 }}>
-          <div style={styles.imageContainer}>
-            <Image
-              src={imageUrl}
-              alt={field.label}
-              width={150}
-              height={100}
-              imageFit={ImageFit.contain}
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = 'none';
-              }}
-            />
-          </div>
-          <Stack tokens={{ childrenGap: 4 }}>
-            {fileName && (
-              <span style={{ fontSize: '12px', color: '#605e5c' }}>{fileName}</span>
-            )}
-            {!isReadOnly && (
-              <Stack horizontal tokens={{ childrenGap: 8 }}>
-                <PrimaryButton
-                  text="更换图片"
-                  iconProps={{ iconName: 'Photo2' }}
-                  onClick={handleUploadClick}
-                  disabled={isUploading}
-                />
-                <IconButton
-                  iconProps={{ iconName: 'Delete' }}
-                  title="移除图片"
-                  onClick={handleRemove}
-                  disabled={isUploading}
-                />
-              </Stack>
-            )}
-          </Stack>
-        </Stack>
-      ) : canUpload ? (
-        <div
-          style={{
-            ...styles.uploadArea,
-            ...(isDragOver ? styles.uploadAreaHover : {}),
-          }}
-          onClick={handleUploadClick}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
+    <div>
+      <Label required={state.required}>{field.label}</Label>
+      
+      {error && (
+        <MessageBar
+          messageBarType={MessageBarType.error}
+          onDismiss={() => setError(null)}
+          styles={{ root: { marginBottom: 8 } }}
         >
-          <Icon iconName="Photo2" styles={{ root: { fontSize: 32, color: '#8a8886', marginBottom: 8 } }} />
-          <div style={{ color: '#323130', marginBottom: 4 }}>拖拽图片到此处或点击上传</div>
-          <div style={{ fontSize: 12, color: '#605e5c' }}>支持 JPEG, PNG, GIF, WebP, BMP (最大 10MB)</div>
-        </div>
-      ) : (
-        <div style={{ ...styles.uploadArea, cursor: 'default', borderColor: '#edebe9' }}>
-          <Icon iconName="Photo2" styles={{ root: { fontSize: 32, color: '#c8c6c4', marginBottom: 8 } }} />
-          <div style={{ color: '#a19f9d' }}>暂无图片</div>
-        </div>
-      )}
-
-      {/* URL input for manual entry */}
-      <TextField
-        placeholder="或输入图片 URL..."
-        value={imageUrl}
-        onChange={handleUrlChange}
-        disabled={isReadOnly || isUploading}
-        styles={{
-          root: { marginTop: 4 },
-          field: { fontSize: 13 },
-        }}
-      />
-
-      {/* Validation error */}
-      {state.errors.length > 0 && (
-        <MessageBar messageBarType={MessageBarType.error}>
-          {state.errors[0]}
+          {error}
         </MessageBar>
       )}
-    </Stack>
+
+      <ImagePicker
+        key={imageUrl || 'empty'}
+        context={spfxContext as any}
+        onFileSelected={handleFileSelected}
+        onDeleteFile={handleDeleteFile}
+        selectedFileUrl={imageUrl || ''}
+      />
+
+      {state.errors.length > 0 && (
+        <div style={{ color: '#a80000', fontSize: 12, marginTop: 4 }}>
+          {state.errors[0]}
+        </div>
+      )}
+    </div>
   );
 };

@@ -91,7 +91,9 @@ export const BaseFieldWrapper: React.FC<BaseFieldProps & { children: React.React
           )}
         </Label>
       )}
-      <div className="form-field__content">{children}</div>
+      <div className="form-field__content">
+        {children}
+      </div>
       {showError && (
         <div className="form-field__errors">
           {state.errors.map((error, i) => (

@@ -1,0 +1,68 @@
+.spdf-taxonomy [class^="termField_"],
+.spdf-taxonomy [class*=" termField_"] {
+  min-height: 32px;
+  border: 1px solid #8a8886;
+  border-radius: 2px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.spdf-taxonomy [class^="termFieldInput_"],
+.spdf-taxonomy [class*=" termFieldInput_"] {
+  width: 100%;
+  min-width: 0;
+}
+
+.spdf-taxonomy [class^="termFieldInput_"] input,
+.spdf-taxonomy [class*=" termFieldInput_"] input {
+  border: 0 !important;
+  outline: none !important;
+  width: 100%;
+  min-height: 28px;
+}
+
+.spdf-taxonomy [class^="pickedTermRoot_"],
+.spdf-taxonomy [class*=" pickedTermRoot_"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #edebe9;
+  border-radius: 2px;
+  padding: 2px 6px;
+  margin: 2px;
+}
+
+.spdf-taxonomy [class^="errorMessage_"],
+.spdf-taxonomy [class*=" errorMessage_"] {
+  color: #a4262c;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.spdf-attachments [class^="ListItemAttachments_"],
+.spdf-attachments [class*=" ListItemAttachments_"] {
+  margin-bottom: 0;
+}
+
+.spdf-attachments [class^="documentCardWrapper_"],
+.spdf-attachments [class*=" documentCardWrapper_"] {
+  width: 100%;
+  min-width: 0;
+  margin-left: 0;
+}
+
+.spdf-attachments [class^="documentCard_"],
+.spdf-attachments [class*=" documentCard_"] {
+  max-width: 100%;
+  border: 1px solid #e1dfdd;
+  border-radius: 4px;
+}
+
+.spdf-attachments [class^="fileLabel_"],
+.spdf-attachments [class*=" fileLabel_"] {
+  white-space: normal;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}

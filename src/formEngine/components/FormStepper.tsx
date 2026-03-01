@@ -16,16 +16,14 @@ export interface FormStepperProps {
   onSubmit: () => void;
   onStepClick?: (stepIndex: number) => void;
   onCancel?: () => void;
-  onSaveDraft?: () => void;
   readOnly?: boolean;
   submitLabel?: string;
-  canSaveDraft?: boolean;
   cancelLabel?: string;
 }
 
 export const FormStepper: React.FC<FormStepperProps> = ({
   currentStep, totalSteps, stepTitles, canGoPrev, isSubmitting,
-  onNext, onPrev, onSubmit, onStepClick, onCancel, onSaveDraft, readOnly, submitLabel, canSaveDraft, cancelLabel,
+  onNext, onPrev, onSubmit, onStepClick, onCancel, readOnly, submitLabel, cancelLabel,
 }) => {
   const isLastStep = currentStep === totalSteps - 1;
   const finalSubmitLabel = submitLabel || '提交';
@@ -102,11 +100,6 @@ export const FormStepper: React.FC<FormStepperProps> = ({
         <div style={actionsStyle}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {onCancel && <DefaultButton onClick={onCancel} disabled={isSubmitting}>{finalCancelLabel}</DefaultButton>}
-            {onSaveDraft && (
-              <DefaultButton onClick={onSaveDraft} disabled={isSubmitting || canSaveDraft === false}>
-                保存草稿
-              </DefaultButton>
-            )}
             {canGoPrev && <DefaultButton onClick={onPrev} disabled={isSubmitting}>上一步</DefaultButton>}
           </div>
           <div>

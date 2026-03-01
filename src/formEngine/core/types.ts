@@ -65,6 +65,7 @@ export interface FormStep {
   description?: string;
   fields: (FormField | null)[]; // 允许 null 占位符以保持网格布局的正确位置
   visible?: boolean; // 步骤是否可见（用于欢迎页等场景）
+  theme?: FormTheme; // 步骤级别的布局配置，覆盖全局配置
 }
 
 export interface FormField {

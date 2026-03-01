@@ -42,21 +42,25 @@
 }
 
 /* PnP ListItemAttachments overrides */
-.spdf-attachments [class^="ListItemAttachments_"] {
+.spdf-attachments [class^="ListItemAttachments_"],
+.spdf-attachments [class*=" ListItemAttachments_"] {
   margin-bottom: 0;
 }
 
-.spdf-attachments [class^="documentCardWrapper_"] {
+.spdf-attachments [class^="documentCardWrapper_"],
+.spdf-attachments [class*=" documentCardWrapper_"] {
   width: 100%;
   min-width: 0;
   margin-left: 0;
 }
 
-.spdf-attachments [class^="documentCard_"] {
+.spdf-attachments [class^="documentCard_"],
+.spdf-attachments [class*=" documentCard_"] {
   max-width: 100%;
 }
 
-.spdf-attachments [class^="fileLabel_"] {
+.spdf-attachments [class^="fileLabel_"],
+.spdf-attachments [class*=" fileLabel_"] {
   white-space: normal;
   line-height: 1.4;
 }

@@ -5,7 +5,6 @@
 import * as React from 'react';
 import { SpinButton } from '@fluentui/react';
 import { BaseFieldProps } from './BaseField';
-import { useDebouncedCallback } from '../hooks/useDebounce';
 
 export const NumberField: React.FC<BaseFieldProps> = ({
   field, state, value, onChange, onBlur, disabled,
@@ -18,23 +17,20 @@ export const NumberField: React.FC<BaseFieldProps> = ({
     setLocalValue(value !== null && value !== undefined ? String(value) : '');
   }, [value]);
 
-  // 防抖回调
-  const debouncedOnChange = useDebouncedCallback(onChange, 300);
-
   // 处理输入变化
   const handleChange = React.useCallback((_e: React.SyntheticEvent, newValue?: string): void => {
     const newStr = newValue || '';
     setLocalValue(newStr); // 即时更新 UI
 
     if (newStr === '') {
-      debouncedOnChange('');
+      onChange('');
       return;
     }
     const numValue = parseFloat(newStr);
     if (!isNaN(numValue)) {
-      debouncedOnChange(numValue);
+      onChange(numValue);
     }
-  }, [debouncedOnChange]);
+  }, [onChange]);
 
   // 处理失焦
   const handleBlur = React.useCallback(() => {

@@ -51,7 +51,6 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   const stateManagerRef = React.useRef<FormStateManager | null>(null);
   const validationEngineRef = React.useRef<ValidationEngine | null>(null);
   const initialValuesRef = React.useRef<Record<string, any> | undefined>(initialValues);
-  const draftSaveTimerRef = React.useRef<number | null>(null);
 
   const [state, setState] = React.useState<FormState | null>(null);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
@@ -60,19 +59,9 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   const [submitAttempted, setSubmitAttempted] = React.useState(false);
   const [errorSummary, setErrorSummary] = React.useState<Array<{ id: string; label: string; message: string }> | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = React.useState(false);
-  const [draftInfo, setDraftInfo] = React.useState<{ values: Record<string, any>; savedAt: number } | null>(null);
-  const [draftDismissed, setDraftDismissed] = React.useState(false);
-  const [draftSavedToast, setDraftSavedToast] = React.useState(false);
 
   const effectiveMode: FormMode = mode || schema.mode;
   const isReadOnly = effectiveMode === 'view';
-  const draftKey = React.useMemo(() => {
-    const schemaKey = schema?.id || schema?.name;
-    if (!schemaKey) return null;
-    const listKey = schema.listName || 'list';
-    const itemKey = schema.itemId ? `:${schema.itemId}` : '';
-    return `spdf:draft:${schemaKey}:${listKey}:${effectiveMode}${itemKey}`;
-  }, [schema, effectiveMode]);
   const cancelLabel = schema.cancelButtonLabel || '取消';
   const cancelRedirectUrl = schema.cancelRedirectUrl?.trim() || '';
   const submitRedirectUrl = schema.submitRedirectUrl?.trim() || '';
@@ -114,67 +103,6 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
       }
     };
   }, []);
-
-  React.useEffect(() => {
-    if (!draftKey || isReadOnly) {
-      setDraftInfo(null);
-      return;
-    }
-
-    try {
-      const raw = localStorage.getItem(draftKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && parsed.values) {
-          setDraftInfo({ values: parsed.values, savedAt: parsed.savedAt || Date.now() });
-          setDraftDismissed(false);
-          return;
-        }
-      }
-    } catch {
-      // Ignore draft read errors
-    }
-    setDraftInfo(null);
-  }, [draftKey, isReadOnly]);
-
-  const prepareDraftValues = React.useCallback((values: Record<string, any>) => {
-    const cleaned: Record<string, any> = { ...values };
-    for (const step of schema.steps) {
-      for (const field of step.fields) {
-        if (!field) continue;
-        if (field.type === 'attachment') {
-          delete cleaned[field.id];
-        }
-      }
-    }
-    return cleaned;
-  }, [schema]);
-
-  React.useEffect(() => {
-    if (!draftKey || isReadOnly || !stateManagerRef.current || !state) return;
-
-    const hasDirty = Object.values(state.fields).some((f) => f.dirty);
-    if (!hasDirty || state.isSubmitting) return;
-
-    if (draftSaveTimerRef.current) {
-      window.clearTimeout(draftSaveTimerRef.current);
-    }
-
-    draftSaveTimerRef.current = window.setTimeout(() => {
-      try {
-        const values = prepareDraftValues(stateManagerRef.current!.getAllFieldValues());
-        localStorage.setItem(draftKey, JSON.stringify({ values, savedAt: Date.now() }));
-      } catch {
-        // Ignore draft save errors
-      }
-    }, 600);
-
-    return () => {
-      if (draftSaveTimerRef.current) {
-        window.clearTimeout(draftSaveTimerRef.current);
-      }
-    };
-  }, [draftKey, isReadOnly, state, prepareDraftValues]);
 
   const scrollToField = React.useCallback((fieldId: string): void => {
     setTimeout(() => {
@@ -332,15 +260,6 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
       });
 
       await onSubmit(values);
-      if (draftKey) {
-        try {
-          localStorage.removeItem(draftKey);
-          setDraftInfo(null);
-          setDraftDismissed(true);
-        } catch {
-          // Ignore draft removal errors
-        }
-      }
       setSubmitSuccess(true);
       setTimeout(() => setSubmitSuccess(false), 3000);
       if (submitRedirectUrl) {
@@ -354,7 +273,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
     } finally {
       stateManagerRef.current.setSubmitting(false);
     }
-  }, [onSubmit, schema, buildErrorSummary, scrollToField, draftKey, submitRedirectUrl, submitRedirectDelay]);
+  }, [onSubmit, schema, buildErrorSummary, scrollToField, submitRedirectUrl, submitRedirectDelay]);
 
   const handleStepClick = React.useCallback((stepIndex: number) => {
     if (!stateManagerRef.current) return;
@@ -370,39 +289,6 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
     setErrorSummary(null);
     setSubmitAttempted(false);
   }, []);
-
-  const handleSaveDraft = React.useCallback(() => {
-    if (!draftKey || isReadOnly || !stateManagerRef.current) return;
-    try {
-      const values = prepareDraftValues(stateManagerRef.current.getAllFieldValues());
-      localStorage.setItem(draftKey, JSON.stringify({ values, savedAt: Date.now() }));
-      setDraftSavedToast(true);
-      setTimeout(() => setDraftSavedToast(false), 2000);
-    } catch {
-      // Ignore draft save errors
-    }
-  }, [draftKey, isReadOnly, prepareDraftValues]);
-
-  const handleRestoreDraft = React.useCallback(() => {
-    if (!draftInfo || !stateManagerRef.current) return;
-    stateManagerRef.current.reset(draftInfo.values);
-    setDraftInfo(null);
-    setDraftDismissed(true);
-    setSubmitError(null);
-    setErrorSummary(null);
-    setSubmitAttempted(false);
-  }, [draftInfo]);
-
-  const handleDiscardDraft = React.useCallback(() => {
-    if (!draftKey) return;
-    try {
-      localStorage.removeItem(draftKey);
-    } catch {
-      // Ignore draft removal errors
-    }
-    setDraftInfo(null);
-    setDraftDismissed(true);
-  }, [draftKey]);
 
   const handleCancelConfirmed = React.useCallback(() => {
     setShowCancelConfirm(false);
@@ -441,11 +327,9 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   const values = state.fields;
   const canGoPrev = state.currentStep > 0;
   const stepTitles = schema.steps.map(step => step.title);
-  const hasDirty = Object.values(state.fields).some((f) => f.dirty);
   const submitLabel = schema.submitButtonLabel || (effectiveMode === 'edit' ? '保存' : '提交');
   const successMessage = schema.onSubmitMessage || (effectiveMode === 'edit' ? '更新成功！' : '提交成功！');
   const showCancelButton = !isReadOnly && schema.showCancelButton !== false;
-  const showDraftButton = !isReadOnly && Boolean(draftKey);
 
   // 如果当前步骤不可见，显示提示
   if (currentStepData.visible === false) {
@@ -468,28 +352,6 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
       {isReadOnly && (
         <MessageBar messageBarType={MessageBarType.info} className="form-message">
           当前为只读模式，无法修改内容。
-        </MessageBar>
-      )}
-
-      {draftInfo && !draftDismissed && !submitAttempted && (
-        <MessageBar
-          messageBarType={MessageBarType.warning}
-          onDismiss={() => setDraftDismissed(true)}
-          className="form-message"
-          actions={
-            <div className="form-message__actions">
-              <DefaultButton onClick={handleRestoreDraft}>恢复草稿</DefaultButton>
-              <DefaultButton onClick={handleDiscardDraft}>忽略</DefaultButton>
-            </div>
-          }
-        >
-          发现未提交草稿（{new Date(draftInfo.savedAt).toLocaleString()}），是否恢复？
-        </MessageBar>
-      )}
-
-      {draftSavedToast && (
-        <MessageBar messageBarType={MessageBarType.info} onDismiss={() => setDraftSavedToast(false)} className="form-message">
-          草稿已保存
         </MessageBar>
       )}
 
@@ -576,10 +438,8 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
           onSubmit={handleSubmit}
           onStepClick={handleStepClick}
           onCancel={showCancelButton ? handleCancel : undefined}
-          onSaveDraft={showDraftButton ? handleSaveDraft : undefined}
           readOnly={isReadOnly}
           submitLabel={submitLabel}
-          canSaveDraft={hasDirty}
           cancelLabel={cancelLabel}
         />
       )}
@@ -592,9 +452,9 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
           onFieldBlur={handleFieldBlur}
           lookupOptions={lookupOptions}
           onResolveUsers={onResolveUsers}
-          labelPosition={schema.theme?.labelPosition}
-          layout={schema.theme?.layout}
-          columns={schema.theme?.columns}
+          labelPosition={currentStepData.theme?.labelPosition ?? schema.theme?.labelPosition}
+          layout={currentStepData.theme?.layout ?? schema.theme?.layout}
+          columns={currentStepData.theme?.columns ?? schema.theme?.columns}
           spfxContext={spfxContext}
           itemId={schema.itemId}
           disabled={isReadOnly}
@@ -606,9 +466,6 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
           <div className="form-actions__left">
             {showCancelButton && (
               <DefaultButton onClick={handleCancel} disabled={state.isSubmitting}>{cancelLabel}</DefaultButton>
-            )}
-            {showDraftButton && (
-              <DefaultButton onClick={handleSaveDraft} disabled={state.isSubmitting || !hasDirty}>保存草稿</DefaultButton>
             )}
           </div>
           <div className="form-actions__right">

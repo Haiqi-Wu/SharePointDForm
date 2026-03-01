@@ -5,7 +5,6 @@
 import * as React from 'react';
 import { TextField as FluentTextField } from '@fluentui/react';
 import { BaseFieldProps } from './BaseField';
-import { useDebouncedCallback } from '../hooks/useDebounce';
 
 export const TextField: React.FC<BaseFieldProps> = ({
   field, state, value, onChange, onBlur, disabled,
@@ -29,15 +28,12 @@ export const TextField: React.FC<BaseFieldProps> = ({
     setLocalValue(stringValue);
   }, [stringValue]);
 
-  // 防抖回调
-  const debouncedOnChange = useDebouncedCallback(onChange, 300);
-
   // 处理输入变化
   const handleChange = React.useCallback((_e: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
     const newStr = newValue || '';
     setLocalValue(newStr); // 即时更新 UI
-    debouncedOnChange(newStr); // 防抖更新表单状态
-  }, [debouncedOnChange]);
+    onChange(newStr); // 立即更新表单状态，避免提交旧值
+  }, [onChange]);
 
   // 处理失焦：立即同步值并触发 onBlur
   const handleBlur = React.useCallback(() => {

@@ -10,6 +10,7 @@ import { spfi, SPFI } from '@pnp/sp';
 import { SPFx as spSPFx } from '@pnp/sp/presets/all';
 import '@pnp/sp/lists/web';
 import './AttachmentField.css';
+import './PnpControlCompat.css';
 
 export interface AttachmentFieldValue {
   // Value is managed by the ListItemAttachments component

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDom from 'react-dom';
-import { Version } from '@microsoft/sp-core-library';
+import { Version, DisplayMode } from '@microsoft/sp-core-library';
 import {
   type IPropertyPaneConfiguration,
   PropertyPaneDropdown,
@@ -59,6 +59,7 @@ export default class SharePointDynamicFormWebPart extends BaseClientSideWebPart<
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
         context: this.context,
         onSaveSchema: (schema) => this.saveSchema(schema),
+        isPageEditMode: this.displayMode === DisplayMode.Edit,
         // 按钮配置
         submitButtonLabel: this.properties.submitButtonLabel,
         showCancelButton: this.properties.showCancelButton,
@@ -179,11 +180,6 @@ export default class SharePointDynamicFormWebPart extends BaseClientSideWebPart<
                     { key: 'edit', text: '编辑' },
                     { key: 'view', text: '查看' },
                   ],
-                }),
-                PropertyPaneToggle('isInDesignerMode', {
-                  label: '设计模式',
-                  onText: '开启',
-                  offText: '关闭',
                 }),
                 PropertyPaneDropdown('labelPosition', {
                   label: '标签位置',

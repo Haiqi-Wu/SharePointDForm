@@ -42,9 +42,10 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
   const handleDeleteField = (fieldId: string): void => {
     const newSteps = [...schema.steps];
 
-    // 检查是否为网格布局
-    const themeLayout = schema.theme?.layout;
-    const themeColumns = schema.theme?.columns;
+    // 使用步骤级别的 theme
+    const stepTheme = currentStep.theme || schema.theme;
+    const themeLayout = stepTheme?.layout;
+    const themeColumns = stepTheme?.columns;
     const isGridLayout = themeLayout === 'grid' && themeColumns && themeColumns > 1;
 
     if (isGridLayout) {
@@ -160,10 +161,10 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
     const newSteps = [...schema.steps];
     let stepFields = [...currentStep.fields];
 
-    // 对于网格布局，insertIndex 是网格位置索引
-    const theme = schema.theme;
-    const themeLayout = theme?.layout;
-    const themeColumns = theme?.columns;
+    // 使用步骤级别的 theme（如果有的话），否则使用全局 theme
+    const stepTheme = currentStep.theme || schema.theme;
+    const themeLayout = stepTheme?.layout;
+    const themeColumns = stepTheme?.columns;
     const isGridLayout = themeLayout === 'grid' && themeColumns && themeColumns > 1;
 
     if (isGridLayout) {
@@ -203,20 +204,12 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
   };
 
   const handleAddStep = (): void => {
-    const themeLayout = schema.theme?.layout;
-    const themeColumns = schema.theme?.columns;
-    const isGridLayout = themeLayout === 'grid' && themeColumns && themeColumns > 1;
-
-    // 网格布局：初始化为 null 占位符数组
-    const initialFields = isGridLayout
-      ? Array.from({ length: themeColumns }, () => null)
-      : [];
-
+    // 新步骤使用默认布局（不继承全局或当前步骤的布局）
     const newStep = {
       id: uuidv4(),
       title: `步骤 ${schema.steps.length + 1}`,
       description: '',
-      fields: initialFields,
+      fields: [],
     };
     onChange({ ...schema, steps: [...schema.steps, newStep] });
     setSelectedStepIndex(schema.steps.length);
@@ -367,7 +360,7 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
           </div>
         )}
 
-        {/* 表单布局配置 */}
+        {/* 步骤布局配置 */}
         <div style={{
           display: 'flex',
           gap: '16px',
@@ -377,12 +370,12 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
           alignItems: 'center',
         }}>
           <div style={{ flex: 1, maxWidth: 200 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14 }}>表单布局</label>
+            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14 }}>步骤布局</label>
             <select
-              value={schema.theme?.layout || 'stack'}
+              value={currentStep.theme?.layout || schema.theme?.layout || 'stack'}
               onChange={(e) => {
                 const newLayout = e.target.value as 'stack' | 'grid';
-                const newColumns = schema.theme?.columns || 3;
+                const newColumns = currentStep.theme?.columns || schema.theme?.columns || 3;
 
                 // 如果切换到网格布局，需要初始化当前步骤的字段数组
                 let updatedSteps = [...schema.steps];
@@ -399,7 +392,13 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
                     }
                     updatedSteps[selectedStepIndex] = {
                       ...currentStep,
-                      fields: paddedFields
+                      fields: paddedFields,
+                      theme: { ...currentStep.theme, layout: newLayout, columns: newColumns }
+                    };
+                  } else {
+                    updatedSteps[selectedStepIndex] = {
+                      ...currentStep,
+                      theme: { ...currentStep.theme, layout: newLayout, columns: newColumns }
                     };
                   }
                 } else if (newLayout === 'stack') {
@@ -408,18 +407,12 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
                   const actualFields = stepFields.filter((f): f is FormField => f !== null);
                   updatedSteps[selectedStepIndex] = {
                     ...currentStep,
-                    fields: actualFields
+                    fields: actualFields,
+                    theme: { ...currentStep.theme, layout: newLayout }
                   };
                 }
 
-                onChange({
-                  ...schema,
-                  theme: {
-                    ...schema.theme,
-                    layout: newLayout,
-                  },
-                  steps: updatedSteps,
-                });
+                onChange({ ...schema, steps: updatedSteps });
               }}
               style={{
                 width: '100%',
@@ -433,11 +426,11 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
               <option value="grid">网格布局</option>
             </select>
           </div>
-          {(schema.theme?.layout === 'grid') && (
+          {(currentStep.theme?.layout || schema.theme?.layout) === 'grid' && (
             <div style={{ flex: 1, maxWidth: 200 }}>
               <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14 }}>列数</label>
               <select
-                value={schema.theme?.columns || 1}
+                value={currentStep.theme?.columns || schema.theme?.columns || 1}
                 onChange={(e) => {
                   const newColumns = parseInt(e.target.value, 10);
 
@@ -462,17 +455,11 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
                   const newSteps = [...schema.steps];
                   newSteps[selectedStepIndex] = {
                     ...currentStep,
-                    fields: rebuiltFields
+                    fields: rebuiltFields,
+                    theme: { ...currentStep.theme, columns: newColumns }
                   };
 
-                  onChange({
-                    ...schema,
-                    theme: {
-                      ...schema.theme,
-                      columns: newColumns,
-                    },
-                    steps: newSteps,
-                  });
+                  onChange({ ...schema, steps: newSteps });
                 }}
                 style={{
                   width: '100%',
@@ -489,7 +476,32 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
               </select>
             </div>
           )}
-          {/* 已移除换行符按钮 */}
+          {/* 标签位置配置 */}
+          <div style={{ flex: 1, maxWidth: 200 }}>
+            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14 }}>标签位置</label>
+            <select
+              value={currentStep.theme?.labelPosition || schema.theme?.labelPosition || 'top'}
+              onChange={(e) => {
+                const newLabelPosition = e.target.value as 'top' | 'left';
+                const newSteps = [...schema.steps];
+                newSteps[selectedStepIndex] = {
+                  ...currentStep,
+                  theme: { ...currentStep.theme, labelPosition: newLabelPosition }
+                };
+                onChange({ ...schema, steps: newSteps });
+              }}
+              style={{
+                width: '100%',
+                padding: '6px 12px',
+                border: '1px solid #8a8886',
+                borderRadius: '4px',
+                fontSize: 14,
+              }}
+            >
+              <option value="top">上方</option>
+              <option value="left">左侧</option>
+            </select>
+          </div>
         </div>
 
         <DropZone
@@ -499,8 +511,8 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
           onFieldDelete={handleDeleteField}
           onFieldChange={handleSaveField}
           onAddField={handleAddField}
-          layout={schema.theme?.layout}
-          columns={schema.theme?.columns}
+          layout={currentStep.theme?.layout || schema.theme?.layout}
+          columns={currentStep.theme?.columns || schema.theme?.columns}
           spFields={safeSpFields}
         />
       </div>

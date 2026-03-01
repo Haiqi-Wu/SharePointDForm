@@ -22,6 +22,7 @@ export interface SharePointDynamicFormContainerProps {
   context: any;
   onSaveSchema: (schema: FormSchema) => void;
   labelPosition?: 'top' | 'left';
+  isPageEditMode: boolean;
   // 按钮配置
   submitButtonLabel?: string;
   showCancelButton?: boolean;
@@ -42,6 +43,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
   isDarkTheme,
   onSaveSchema,
   labelPosition = 'top',
+  isPageEditMode = false,
   // 按钮配置
   submitButtonLabel,
   showCancelButton,
@@ -234,28 +236,30 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
   };
 
   const convertValueForSP = (value: any, field: any): any => {
-    if (!value) return null;
+    // 使用更精确的 null/undefined 检查，避免 0、''、false 被错误过滤
+    if (value === null || value === undefined) return null;
+    
     switch (field.type) {
-      case 'person':
-        // Person field: safely extract Id
-        if (Array.isArray(value)) {
-          const ids = value.filter(v => v && v.Id).map((v: any) => v.Id);
-          return ids.length > 0 ? ids : null;
-        }
-        return value?.Id || null;
-      case 'lookup':
-        // Lookup field: safely extract Id
-        return value?.Id || null;
-      case 'multiselect': return { results: value };
-      case 'datetime': return new Date(value).toISOString();
+      case 'multiselect':
+        if (!Array.isArray(value) || value.length === 0) return null;
+        return { results: value };
+      case 'datetime':
+        if (!value) return null;
+        return new Date(value).toISOString();
       case 'image':
-        // 图片字段返回 URL 或 serverRelativeUrl
+        // SharePoint Image 字段需要 JSON 字符串格式
+        if (!value) return null;
         if (typeof value === 'string') {
-          return { Url: value };
-        } else if (value.url) {
-          return { Url: value.url };
-        } else if (value.serverRelativeUrl) {
-          return { Url: value.serverRelativeUrl };
+          return JSON.stringify({ serverRelativeUrl: value });
+        }
+        if (value.serverRelativeUrl) {
+          return JSON.stringify({
+            serverRelativeUrl: value.serverRelativeUrl,
+            fileName: value.fileName || ''
+          });
+        }
+        if (value.url) {
+          return JSON.stringify({ serverRelativeUrl: value.url });
         }
         return null;
       case 'url':
@@ -268,10 +272,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
         return { Url: value, Description: '' };
       case 'taxonomy':
         // Taxonomy 字段返回特殊格式
-        // 单选: { Label: string, TermGuid: string, WssId: number }
-        // 多选: [{ Label, TermGuid, WssId }, ...]
         if (Array.isArray(value)) {
-          // 多选 taxonomy
           if (value.length === 0) return null;
           return value.map((v: any) => ({
             Label: v.Label,
@@ -279,7 +280,6 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
             WssId: v.WssId ?? -1
           }));
         } else if (value.Label && value.TermGuid) {
-          // 单选 taxonomy，已经具有正确格式
           return {
             Label: value.Label,
             TermGuid: value.TermGuid,
@@ -287,7 +287,18 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
           };
         }
         return null;
-      default: return value;
+      case 'number':
+      {
+        // 数字字段：空字符串转为 null，确保 0 值能正确提交
+        if (value === '' || value === null) return null;
+        const numVal = parseFloat(value);
+        return isNaN(numVal) ? null : numVal;
+      }
+      case 'boolean':
+        // 布尔字段：确保 false 值能正确提交
+        return value;
+      default:
+        return value;
     }
   };
 
@@ -354,6 +365,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
           if (field.type === 'richtext') {
             continue;
           }
+
           // 收集附件字段，稍后处理
           if (field.type === 'attachment') {
             const fieldValue = values[field.id];
@@ -363,8 +375,35 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
             }
             continue;
           }
+
           const fieldValue = values[field.id];
-          itemData[field.fieldName] = convertValueForSP(fieldValue, field);
+
+          // People/Lookup 字段必须使用 *Id 属性更新，否则 SharePoint 会忽略改动
+          if (field.type === 'person') {
+            const allowMultiple = field.config?.allowMultiple ?? Array.isArray(fieldValue);
+            const ids = Array.isArray(fieldValue)
+              ? fieldValue.filter((v: any) => v && v.Id).map((v: any) => v.Id)
+              : (fieldValue?.Id ? [fieldValue.Id] : []);
+            const key = `${field.fieldName}Id`;
+            itemData[key] = allowMultiple ? { results: ids || [] } : (ids[0] ?? null);
+            continue;
+          }
+
+          if (field.type === 'lookup') {
+            const allowMultiple = field.config?.allowMultiple ?? Array.isArray(fieldValue);
+            const ids = Array.isArray(fieldValue)
+              ? fieldValue.filter((v: any) => v && v.Id).map((v: any) => v.Id)
+              : (fieldValue?.Id ? [fieldValue.Id] : []);
+            const key = `${field.fieldName}Id`;
+            itemData[key] = allowMultiple ? { results: ids || [] } : (ids[0] ?? null);
+            continue;
+          }
+
+          const convertedValue = convertValueForSP(fieldValue, field);
+          // 跳过 null/undefined 值，让 SharePoint 使用默认值
+          if (convertedValue !== null && convertedValue !== undefined) {
+            itemData[field.fieldName] = convertedValue;
+          }
         }
       }
 
@@ -375,7 +414,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
         await dataSource.updateItem(targetList, itemId, itemData);
       } else {
         const newItem = await dataSource.createItem(targetList, itemData);
-        createdItemId = newItem.Id;
+        createdItemId = newItem?.Id;
       }
 
       // 处理附件上传
@@ -476,8 +515,8 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
 
   return (
     <div className={`${styles.container} ${isDarkTheme ? styles.dark : ''}`}>
-      {/* 编辑按钮 */}
-      {mode !== 'view' && (
+      {/* 编辑按钮 - 仅在页面编辑模式下显示 */}
+      {isPageEditMode && (
         <div className={styles.editBar}>
           <PrimaryButton
             iconProps={{ iconName: 'Edit' }}

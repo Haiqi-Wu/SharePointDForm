@@ -6,6 +6,7 @@ import * as React from 'react';
 import { BaseFieldProps } from './BaseField';
 import { TaxonomyPicker } from '@pnp/spfx-controls-react/lib/TaxonomyPicker';
 import { TextField, Link, MessageBar, MessageBarType } from '@fluentui/react';
+import './PnpControlCompat.css';
 
 export interface TaxonomyFieldValue {
   Label: string;
@@ -170,19 +171,21 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
   }
 
   return (
-    <TaxonomyPicker
-      context={spfxContext}
-      label={field.label}
-      termsetNameOrID={termSetId}
-      onChange={handleChange}
-      initialValues={selectedTerms}
-      allowMultipleSelections={allowMultiple}
-      disabled={disabled || state.readOnly || state.disabled}
-      required={state.required}
-      panelTitle={`选择${field.label}`}
-      placeholder={field.config?.placeholder || '选择术语...'}
-      hideTagsNotAvailableForTagging={false}
-      hideDeprecatedTags={true}
-    />
+    <div className="spdf-taxonomy">
+      <TaxonomyPicker
+        context={spfxContext}
+        label={field.label}
+        termsetNameOrID={termSetId}
+        onChange={handleChange}
+        initialValues={selectedTerms}
+        allowMultipleSelections={allowMultiple}
+        disabled={disabled || state.readOnly || state.disabled}
+        required={state.required}
+        panelTitle={`选择${field.label}`}
+        placeholder={field.config?.placeholder || '选择术语...'}
+        hideTagsNotAvailableForTagging={false}
+        hideDeprecatedTags={true}
+      />
+    </div>
   );
 };

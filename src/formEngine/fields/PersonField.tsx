@@ -38,13 +38,15 @@ export const PersonField: React.FC<PersonFieldProps> = ({
 
     // 数组格式
     if (Array.isArray(val)) {
-      return val.map(item => ({
-        Id: item.Id || item.id,
-        LoginName: item.Email || '',
-        Email: item.Email || '',
-        Title: item.Title || item.displayName || '',
-        PrincipalType: PrincipalType.User
-      }));
+      return val
+        .filter((item) => item && (item.Id || item.id))
+        .map(item => ({
+          Id: item.Id || item.id,
+          LoginName: item.Email || '',
+          Email: item.Email || '',
+          Title: item.Title || item.displayName || '',
+          PrincipalType: PrincipalType.User
+        }));
     }
 
     return [];
@@ -57,14 +59,16 @@ export const PersonField: React.FC<PersonFieldProps> = ({
 
     if (allowMultiple) {
       // 多选：保存为对象数组
-      const converted = items.map(item => ({
-        Id: item.Id,
-        Title: item.Title
-      }));
-      onChange(converted);
+      const converted = (items || [])
+        .filter((item: any) => item && item.Id)
+        .map((item: any) => ({
+          Id: item.Id,
+          Title: item.Title
+        }));
+      onChange(converted.length > 0 ? converted : null);
     } else {
       // 单选：保存单个对象或 null
-      if (items.length > 0) {
+      if (items.length > 0 && items[0] && items[0].Id) {
         onChange({
           Id: items[0].Id,
           Title: items[0].Title
@@ -95,7 +99,7 @@ export const PersonField: React.FC<PersonFieldProps> = ({
       personSelectionLimit={allowMultiple ? undefined : 1}
       onChange={handleChange}
       defaultSelectedUsers={selectedUsers}
-      key={selectedUsers.map((u: any) => u.Id).join(',') || 'empty'} // 当用户改变时强制重新渲染
+      key={selectedUsers.filter((u: any) => u && u.Id).map((u: any) => u.Id).join(',') || 'empty'} // 当用户改变时强制重新渲染
       placeholder={field.config?.placeholder || '输入姓名或邮箱搜索（至少3个字符）...'}
       disabled={disabled || state.readOnly || state.disabled}
       principalTypes={[PrincipalType.User]}

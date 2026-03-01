@@ -5,7 +5,6 @@
 import * as React from 'react';
 import { TextField as FluentTextField } from '@fluentui/react';
 import { BaseFieldProps } from './BaseField';
-import { useDebouncedCallback } from '../hooks/useDebounce';
 
 export const MultilineField: React.FC<BaseFieldProps> = ({
   field, state, value, onChange, onBlur, disabled,
@@ -18,15 +17,12 @@ export const MultilineField: React.FC<BaseFieldProps> = ({
     setLocalValue(value || '');
   }, [value]);
 
-  // 防抖回调
-  const debouncedOnChange = useDebouncedCallback(onChange, 300);
-
   // 处理输入变化
   const handleChange = React.useCallback((_e: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
     const newStr = newValue || '';
     setLocalValue(newStr);
-    debouncedOnChange(newStr);
-  }, [debouncedOnChange]);
+    onChange(newStr);
+  }, [onChange]);
 
   // 处理失焦
   const handleBlur = React.useCallback(() => {
