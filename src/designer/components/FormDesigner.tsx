@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { FormSchema, FormField, SPFieldInfo } from '../../formEngine/core/types';
-import { FieldPalette } from '../controls/DraggableField';
+import { FieldPalette } from '../controls/FieldPalette';
 import { DesignerCanvas } from './DesignerCanvas';
 import { SharePointDataSource } from '../../formEngine/data/SharePointDataSource';
 

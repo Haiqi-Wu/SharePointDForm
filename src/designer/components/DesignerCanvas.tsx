@@ -4,7 +4,7 @@
 
 import * as React from 'react';
 import { FormSchema, FormField, SPFieldInfo, FieldType } from '../../formEngine/core/types';
-import { DropZone } from '../controls/DropZone';
+import { FieldLayout } from '../controls/FieldLayout';
 import { PropertyPanel } from './PropertyPanel';
 import { v4 as uuidv4 } from 'uuid';
 import { TextField, PrimaryButton, Label } from '@fluentui/react';
@@ -504,7 +504,7 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
           </div>
         </div>
 
-        <DropZone
+        <FieldLayout
           fields={currentStep.fields}
           allFields={allFields}
           onFieldSelect={handleSelectField}

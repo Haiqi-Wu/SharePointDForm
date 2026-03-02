@@ -10,5 +10,5 @@ export { PropertyPanel } from './components/PropertyPanel';
 export type { PropertyPanelProps } from './components/PropertyPanel';
 export { ConditionBuilder } from './components/ConditionBuilder';
 export type { ConditionBuilderProps } from './components/ConditionBuilder';
-export { FieldPalette } from './controls/DraggableField';
-export type { FieldPaletteProps } from './controls/DraggableField';
+export { FieldPalette } from './controls/FieldPalette';
+export type { FieldPaletteProps } from './controls/FieldPalette';

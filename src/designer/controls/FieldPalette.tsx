@@ -1,11 +1,11 @@
 /**
- * Draggable Field Control
+ * Field Palette
  */
 
 import * as React from 'react';
 import { SPFieldInfo, SPFieldType, FieldType } from '../../formEngine/core/types';
 
-export interface DraggableFieldProps {
+export interface FieldCardProps {
   spField: SPFieldInfo;
 }
 
@@ -18,11 +18,11 @@ export interface CustomFieldType {
 }
 
 // 自定义字段组件
-export interface DraggableCustomFieldProps {
+export interface CustomFieldCardProps {
   fieldType: CustomFieldType;
 }
 
-export const DraggableCustomField: React.FC<DraggableCustomFieldProps> = ({ fieldType }) => {
+export const CustomFieldCard: React.FC<CustomFieldCardProps> = ({ fieldType }) => {
   const [isHovered, setIsHovered] = React.useState(false);
 
   const customFieldStyle: React.CSSProperties = {
@@ -77,7 +77,7 @@ const getFieldIcon = (type: SPFieldType): string => {
   return iconMap[type] || '📝';
 };
 
-const draggableFieldStyle: React.CSSProperties = {
+const fieldCardStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '12px',
@@ -89,18 +89,18 @@ const draggableFieldStyle: React.CSSProperties = {
   marginBottom: '8px',
 };
 
-const draggableFieldHoverStyle: React.CSSProperties = {
-  ...draggableFieldStyle,
+const fieldCardHoverStyle: React.CSSProperties = {
+  ...fieldCardStyle,
   background: '#edebe9',
 };
 
-export const DraggableField: React.FC<DraggableFieldProps> = ({ spField }) => {
+export const FieldCard: React.FC<FieldCardProps> = ({ spField }) => {
   const [isHovered, setIsHovered] = React.useState(false);
 
   return (
     <div
       style={{
-        ...(isHovered ? draggableFieldHoverStyle : draggableFieldStyle),
+        ...(isHovered ? fieldCardHoverStyle : fieldCardStyle),
         cursor: 'default',
       }}
       onMouseEnter={() => setIsHovered(true)}
@@ -194,7 +194,7 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ spFields, isLoading 
         </div>
         <div style={fieldsContainerStyle}>
           {customFieldTypes.map(fieldType => (
-            <DraggableCustomField key={fieldType.type} fieldType={fieldType} />
+            <CustomFieldCard key={fieldType.type} fieldType={fieldType} />
           ))}
         </div>
       </div>
@@ -212,7 +212,7 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ spFields, isLoading 
             </div>
           ) : (
             fields.map(spField => (
-              <DraggableField key={spField.internalName} spField={spField} />
+              <FieldCard key={spField.internalName} spField={spField} />
             ))
           )}
         </div>

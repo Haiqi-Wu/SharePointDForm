@@ -1,5 +1,5 @@
 /**
- * Drop Zone Control
+ * Field Layout
  */
 
 import * as React from 'react';
@@ -7,7 +7,7 @@ import * as React from 'react';
 import { FormField } from '../../formEngine/core/types';
 import { DesignerFieldRenderer } from '../components/DesignerFieldRenderer';
 
-interface SortableFieldProps {
+interface FieldBlockProps {
   field: FormField;
   onSelect?: (field: FormField) => void;
   onDelete?: (fieldId: string) => void;
@@ -17,7 +17,7 @@ interface SortableFieldProps {
   startNewRow?: boolean;
 }
 
-const sortableFieldStyle: React.CSSProperties = {
+const fieldBlockStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '12px',
@@ -29,7 +29,7 @@ const sortableFieldStyle: React.CSSProperties = {
   cursor: 'default',
 };
 
-const sortableFieldGridStyle: React.CSSProperties = {
+const fieldBlockGridStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: '12px',
@@ -41,12 +41,12 @@ const sortableFieldGridStyle: React.CSSProperties = {
   minHeight: '60px',
 };
 
-const sortableFieldHoverStyle: React.CSSProperties = {
-  ...sortableFieldStyle,
+const fieldBlockHoverStyle: React.CSSProperties = {
+  ...fieldBlockStyle,
   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
 };
 
-const SortableField: React.FC<SortableFieldProps> = ({
+const FieldBlock: React.FC<FieldBlockProps> = ({
   field,
   onSelect,
   onDelete,
@@ -66,11 +66,11 @@ const SortableField: React.FC<SortableFieldProps> = ({
   }, [field]);
 
   const style = {
-    ...(isHovered ? sortableFieldHoverStyle : sortableFieldStyle),
+    ...(isHovered ? fieldBlockHoverStyle : fieldBlockStyle),
   };
 
   const gridStyle: React.CSSProperties = {
-    ...sortableFieldGridStyle,
+    ...fieldBlockGridStyle,
     ...(isHovered ? { boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)' } : {}),
     ...(totalColumns && (columnSpan || startNewRow) ? {
       ...(startNewRow ? {
@@ -219,7 +219,7 @@ const SortableField: React.FC<SortableFieldProps> = ({
   );
 };
 
-export interface DropZoneProps {
+export interface FieldLayoutProps {
   fields: (FormField | null)[]; // 允许 null 占位符以保持网格布局的正确位置
   allFields?: FormField[];
   onFieldSelect?: (field: FormField) => void;
@@ -235,7 +235,7 @@ export interface DropZoneProps {
   spFields?: any[];
 }
 
-const dropZoneStyle: React.CSSProperties = {
+const fieldLayoutStyle: React.CSSProperties = {
   minHeight: '400px',
   padding: '24px',
   background: '#faf9f8',
@@ -243,14 +243,14 @@ const dropZoneStyle: React.CSSProperties = {
   borderRadius: '8px',
 };
 
-const dropZoneGridStyle: React.CSSProperties = {
-  ...dropZoneStyle,
+const fieldLayoutGridStyle: React.CSSProperties = {
+  ...fieldLayoutStyle,
   display: 'grid',
   gap: '16px',
 };
 
 
-export const DropZone: React.FC<DropZoneProps> = ({
+export const FieldLayout: React.FC<FieldLayoutProps> = ({
   fields,
   allFields,
   onFieldSelect,
@@ -297,13 +297,13 @@ export const DropZone: React.FC<DropZoneProps> = ({
   const getContainerStyle = (): React.CSSProperties => {
     if (useGridLayout) {
       return {
-        ...dropZoneStyle,
-        ...dropZoneGridStyle,
+        ...fieldLayoutStyle,
+        ...fieldLayoutGridStyle,
         gridTemplateColumns: `repeat(${columns}, 1fr)`,
       };
     }
 
-    return dropZoneStyle;
+    return fieldLayoutStyle;
   };
 
   // 处理添加字段
@@ -637,7 +637,7 @@ export const DropZone: React.FC<DropZoneProps> = ({
                 // 字段位置
                 const field = position.field;
                 return (
-                  <SortableField
+                  <FieldBlock
                     key={field.id}
                     field={field}
                     onSelect={onFieldSelect}
@@ -688,7 +688,7 @@ export const DropZone: React.FC<DropZoneProps> = ({
                 {stackFields.map((field, index) => (
                   <React.Fragment key={field.id}>
                     {renderAddButton(index)}
-                    <SortableField
+                    <FieldBlock
                       field={field}
                       onSelect={onFieldSelect}
                       onDelete={onFieldDelete}

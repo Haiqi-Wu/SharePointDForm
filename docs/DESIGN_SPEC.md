@@ -321,8 +321,8 @@ src/
 │   │   └── PreviewPane.tsx              # 预览
 │   │
 │   └── controls/
-│       ├── DraggableField.tsx           # 可拖拽字段
-│       └── DropZone.tsx                 # 放置区域
+│       ├── FieldPalette.tsx             # 字段面板
+│       └── FieldLayout.tsx              # 字段布局
 │
 ├── webparts/
 │   └── dynamicForm/
