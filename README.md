@@ -4,13 +4,11 @@ A SharePoint Framework web part for building and rendering dynamic forms against
 
 ## Features
 
-- Designer mode with button-based field insertion (no drag and drop)
+- Designer mode with button-based field insertion
 - Grid and stack layouts with column spans
 - Field types: text, multiline, number, datetime, dropdown, multiselect, lookup, person, boolean, image, URL, taxonomy, attachment, richtext
 - Conditional visibility and required rules
-- Draft autosave (localStorage)
 - Attachments upload on submit
-- PnP controls compatibility patch for SPFx 1.22
 
 ## Prerequisites
 
@@ -21,8 +19,7 @@ A SharePoint Framework web part for building and rendering dynamic forms against
 ## Build and Run
 
 - `npm install`
-- `npm run start`
-- `npm run build`
+- `heft start`
 
 ## Usage
 
@@ -34,7 +31,7 @@ A SharePoint Framework web part for building and rendering dynamic forms against
 
 ## Notes
 
-- Drag and drop is intentionally removed. Field insertion is button-driven.
+- Field insertion is button-driven.
 - PnP controls are not fully aligned with SPFx 1.22. This project includes:
   - Webpack CSS hashing patch: `config/spfx-customize-webpack.js`
   - Fallback styles: `src/formEngine/fields/PnpControlCompat.css`
