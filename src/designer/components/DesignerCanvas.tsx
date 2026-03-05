@@ -153,6 +153,7 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
       type: fieldType,
       label: String(spField.title ?? spField.label ?? spField.internalName ?? spField.fieldName ?? ''),
       fieldName: String(fieldName || ''),
+      description: spField.description || undefined,
       required: Boolean(spField.required),
       config: Object.keys(config).length > 0 ? config : undefined,
     };

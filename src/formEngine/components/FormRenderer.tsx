@@ -73,7 +73,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   }, [initialValues]);
 
   React.useEffect(() => {
-    const manager = new FormStateManager(schema, initialValues);
+    const manager = new FormStateManager(schema, initialValues, { forceReadOnly: isReadOnly });
     const validator = new ValidationEngine(schema);
 
     stateManagerRef.current = manager;
@@ -93,7 +93,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
     return () => {
       unsubscribe();
     };
-  }, [schema, initialValues]);
+  }, [schema, initialValues, isReadOnly]);
 
   React.useEffect(() => {
     return () => {
@@ -349,12 +349,6 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
 
   return (
     <div className={`form-renderer form-renderer--${effectiveMode}`}>
-      {isReadOnly && (
-        <MessageBar messageBarType={MessageBarType.info} className="form-message">
-          当前为只读模式，无法修改内容。
-        </MessageBar>
-      )}
-
       {submitProgress?.phase === 'uploading' && (
         <MessageBar messageBarType={MessageBarType.info} className="form-message">
           <div className="form-progress">
@@ -453,22 +447,21 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
           lookupOptions={lookupOptions}
           onResolveUsers={onResolveUsers}
           labelPosition={currentStepData.theme?.labelPosition ?? schema.theme?.labelPosition}
+          showFieldDescription={schema.showFieldDescription}
           layout={currentStepData.theme?.layout ?? schema.theme?.layout}
           columns={currentStepData.theme?.columns ?? schema.theme?.columns}
           spfxContext={spfxContext}
           itemId={schema.itemId}
-          disabled={isReadOnly}
+          disabled={false}
         />
       </div>
 
       {schema.steps.length === 1 && !isReadOnly && (
         <div className="form-actions">
-          <div className="form-actions__left">
+          <div className="form-actions__right" style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
             {showCancelButton && (
               <DefaultButton onClick={handleCancel} disabled={state.isSubmitting}>{cancelLabel}</DefaultButton>
             )}
-          </div>
-          <div className="form-actions__right">
             <PrimaryButton onClick={handleSubmit} disabled={state.isSubmitting}>
               {state.isSubmitting ? '提交中...' : submitLabel}
             </PrimaryButton>

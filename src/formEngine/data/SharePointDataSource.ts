@@ -33,7 +33,7 @@ export class SharePointDataSource {
       const [listInfo, fields] = await Promise.all([
         this.sp.web.lists.getByTitle(listName).select('Id', 'Title', 'EnableAttachments')(),
         this.sp.web.lists.getByTitle(listName).fields.select(
-          'Id', 'InternalName', 'Title', 'TypeAsString', 'Required', 'ReadOnlyField',
+          'Id', 'InternalName', 'Title', 'Description', 'TypeAsString', 'Required', 'ReadOnlyField',
           'Hidden', 'FromBaseType', 'Choices', 'LookupList', 'LookupField',
           'AllowMultipleValues', 'MaxLength', 'TextField', 'TermSetId'
         )()
@@ -103,6 +103,7 @@ export class SharePointDataSource {
     const isTitleField = field.InternalName === 'Title' || field.InternalName === 'LinkTitle' || field.InternalName === 'LinkTitleNoMenu';
     const internalName = isTitleField ? 'Title' : field.InternalName;
     const title = isTitleField ? 'Title' : (field.Title || field.InternalName);
+    const description = field.Description || undefined;
 
     // 处理 Choices 字段 - SharePoint 可能返回不同格式
     let choices: string[] | undefined;
@@ -120,6 +121,7 @@ export class SharePointDataSource {
       id: field.Id,
       internalName,
       title,
+      description,
       type,
       required: field.Required || false,
       readOnly: field.ReadOnlyField || false,
@@ -169,11 +171,76 @@ export class SharePointDataSource {
     return result || SPFieldType.Text;
   }
 
-  async getItem(listName: string, itemId: number): Promise<any> {
+  async getItem(
+    listName: string,
+    itemId: number,
+    fields?: Array<{ fieldName: string; type: string; config?: any }>
+  ): Promise<any> {
+    const baseRequest = this.sp.web.lists.getByTitle(listName).items.getById(itemId);
+
+    const buildRequest = (fieldDefs?: Array<{ fieldName: string; type: string; config?: any }>) => {
+      let itemRequest = baseRequest;
+      if (!fieldDefs || fieldDefs.length === 0) return itemRequest;
+
+      const expandFields = new Set<string>();
+      const selectFields = new Set<string>(['*']);
+
+      for (const field of fieldDefs) {
+        if (!field || !field.fieldName) continue;
+        if (field.type === 'person') {
+          expandFields.add(field.fieldName);
+          selectFields.add(`${field.fieldName}/Id`);
+          selectFields.add(`${field.fieldName}/Title`);
+          selectFields.add(`${field.fieldName}/EMail`);
+        } else if (field.type === 'lookup') {
+          expandFields.add(field.fieldName);
+          selectFields.add(`${field.fieldName}/Id`);
+          // Always select Title for lookup; custom sub-fields may not exist or be display names
+          selectFields.add(`${field.fieldName}/Title`);
+        }
+      }
+
+      if (expandFields.size > 0) {
+        itemRequest = itemRequest.expand(...Array.from(expandFields));
+      }
+      if (selectFields.size > 0) {
+        itemRequest = itemRequest.select(...Array.from(selectFields));
+      }
+      return itemRequest;
+    };
+
+    const tryRequest = async (fieldDefs?: Array<{ fieldName: string; type: string; config?: any }>, skipped: Set<string> = new Set()): Promise<any> => {
+      try {
+        return await buildRequest(fieldDefs)();
+      } catch (error: any) {
+        const message = error?.message || '';
+        const missingMatch = message.match(/'([^']+)'/);
+        const missingName = missingMatch ? missingMatch[1] : '';
+        const isMissingField = message.includes('does not exist') || message.includes('The field or property');
+
+        if (isMissingField && missingName && !skipped.has(missingName) && fieldDefs && fieldDefs.length > 0) {
+          skipped.add(missingName);
+          const filtered = fieldDefs.filter((f) => f && f.fieldName !== missingName);
+          return await tryRequest(filtered, skipped);
+        }
+        throw error;
+      }
+    };
+
     try {
-      const item = await this.sp.web.lists.getByTitle(listName).items.getById(itemId)();
-      return item;
-    } catch (error) {
+      return await tryRequest(fields);
+    } catch (error: any) {
+      const message = error?.message || '';
+      const isMissingField = message.includes('does not exist') || message.includes('The field or property');
+      if (isMissingField) {
+        // Final fallback: request without expand/select to avoid total failure
+        try {
+          return await baseRequest();
+        } catch (innerError) {
+          console.error(`Error fetching item ${itemId} from list ${listName}:`, innerError);
+          throw innerError;
+        }
+      }
       console.error(`Error fetching item ${itemId} from list ${listName}:`, error);
       throw error;
     }
@@ -201,8 +268,22 @@ export class SharePointDataSource {
 
   async getLookupChoices(lookupList: string, lookupField: string = 'Title'): Promise<any[]> {
     try {
-      const items = await this.sp.web.lists.getById(lookupList).items.select('Id', lookupField).top(5000)();
-      return items;
+      const safeInternal = /^[A-Za-z0-9_]+$/.test(lookupField) || /^(_x[0-9a-f]{4}_)+$/i.test(lookupField);
+      const selectField = safeInternal ? lookupField : 'Title';
+      let items: any[] = [];
+      try {
+        items = await this.sp.web.lists.getById(lookupList).items.select('Id', selectField).top(5000)();
+      } catch (innerError) {
+        if (selectField !== 'Title') {
+          items = await this.sp.web.lists.getById(lookupList).items.select('Id', 'Title').top(5000)();
+        } else {
+          throw innerError;
+        }
+      }
+      return items.map((item) => ({
+        ...item,
+        Title: item[selectField] ?? item.Title ?? String(item.Id),
+      }));
     } catch (error) {
       console.error(`Error fetching lookup choices from list ${lookupList}:`, error);
       throw error;

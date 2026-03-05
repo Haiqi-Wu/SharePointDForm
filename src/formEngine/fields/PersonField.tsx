@@ -19,40 +19,25 @@ export interface PersonFieldProps extends BaseFieldProps {
 export const PersonField: React.FC<PersonFieldProps> = ({
   field, state, value, onChange, disabled, spfxContext,
 }) => {
-  // 转换值格式以匹配 PnP PeoplePicker 的期望格式
-  const convertToPnPFormat = React.useCallback((val: any): any[] => {
-    if (!val) return [];
-
-    // 单个用户对象
-    if (val && typeof val === 'object' && !Array.isArray(val)) {
-      if (val.Id && val.Title) {
-        return [{
-          Id: val.Id,
-          LoginName: val.Email || '',
-          Email: val.Email || '',
-          Title: val.Title,
-          PrincipalType: PrincipalType.User
-        }];
-      }
+  const resolveUserIdentifier = React.useCallback((val: any): string | null => {
+    if (!val) return null;
+    if (typeof val === 'string') return val;
+    if (typeof val === 'object') {
+      return val.EMail || val.Email || val.LoginName || val.Title || val.displayName || null;
     }
-
-    // 数组格式
-    if (Array.isArray(val)) {
-      return val
-        .filter((item) => item && (item.Id || item.id))
-        .map(item => ({
-          Id: item.Id || item.id,
-          LoginName: item.Email || '',
-          Email: item.Email || '',
-          Title: item.Title || item.displayName || '',
-          PrincipalType: PrincipalType.User
-        }));
-    }
-
-    return [];
+    return null;
   }, []);
 
-  const selectedUsers = React.useMemo(() => convertToPnPFormat(value), [value, convertToPnPFormat]);
+  const selectedUsers = React.useMemo(() => {
+    if (!value) return [];
+    if (Array.isArray(value)) {
+      return value
+        .map(resolveUserIdentifier)
+        .filter((v): v is string => Boolean(v));
+    }
+    const single = resolveUserIdentifier(value);
+    return single ? [single] : [];
+  }, [value, resolveUserIdentifier]);
 
   const handleChange = (items: any[]): void => {
     const allowMultiple = field.config?.allowMultiple ?? false;
@@ -99,7 +84,7 @@ export const PersonField: React.FC<PersonFieldProps> = ({
       personSelectionLimit={allowMultiple ? undefined : 1}
       onChange={handleChange}
       defaultSelectedUsers={selectedUsers}
-      key={selectedUsers.filter((u: any) => u && u.Id).map((u: any) => u.Id).join(',') || 'empty'} // 当用户改变时强制重新渲染
+      key={selectedUsers.join(',') || 'empty'} // 当用户改变时强制重新渲染
       placeholder={field.config?.placeholder || '输入姓名或邮箱搜索（至少3个字符）...'}
       disabled={disabled || state.readOnly || state.disabled}
       principalTypes={[PrincipalType.User]}

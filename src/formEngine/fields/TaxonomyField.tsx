@@ -6,6 +6,7 @@ import * as React from 'react';
 import { BaseFieldProps } from './BaseField';
 import { TaxonomyPicker } from '@pnp/spfx-controls-react/lib/TaxonomyPicker';
 import { TextField, Link, MessageBar, MessageBarType } from '@fluentui/react';
+import { SPHttpClient } from '@microsoft/sp-http';
 import './PnpControlCompat.css';
 
 export interface TaxonomyFieldValue {
@@ -23,6 +24,7 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
 }) => {
   const [selectedTerms, setSelectedTerms] = React.useState<any[]>([]);
   const [isWorkbench, setIsWorkbench] = React.useState<boolean>(false);
+  const termLabelCacheRef = React.useRef<Map<string, string>>(new Map());
 
   const termSetId = field.config?.termSetId;
   const allowMultiple = field.config?.allowMultiple || false;
@@ -39,6 +41,35 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
     }
   }, [spfxContext]);
 
+  const isLabelLikelyId = (label?: string): boolean => {
+    if (!label) return true;
+    return /^\d+$/.test(label.trim());
+  };
+
+  const resolveTermLabel = React.useCallback(async (termGuid: string): Promise<string | null> => {
+    if (!termGuid || !spfxContext) return null;
+    const cached = termLabelCacheRef.current.get(termGuid);
+    if (cached) return cached;
+    const webUrl = spfxContext.pageContext?.web?.absoluteUrl;
+    if (!webUrl || !termSetId) return null;
+
+    try {
+      const endpoint = `${webUrl}/_api/v2.1/termstore/sets('${termSetId}')/terms('${termGuid}')?$select=id,labels`;
+      const response = await spfxContext.spHttpClient.get(endpoint, SPHttpClient.configurations.v1);
+      if (!response.ok) return null;
+      const data = await response.json();
+      const labels: Array<{ name?: string; isDefault?: boolean; languageTag?: string }> = data?.labels || [];
+      const preferred = labels.find((l) => l.isDefault) || labels[0];
+      const resolved = preferred?.name || null;
+      if (resolved) {
+        termLabelCacheRef.current.set(termGuid, resolved);
+      }
+      return resolved;
+    } catch {
+      return null;
+    }
+  }, [spfxContext, termSetId]);
+
   // Helper to convert TaxonomyFieldValue to IPickerTerm (for TaxonomyPicker)
   const convertToPickerTerm = (val: any): any => {
     if (val.TermGuid && val.Label) {
@@ -52,27 +83,67 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
     return null;
   };
 
-  // Initialize selectedTerms from value
+  // Initialize selectedTerms from value (and resolve label by TermGuid if needed)
   React.useEffect(() => {
-    if (value) {
-      if (Array.isArray(value)) {
-        const terms = value.map((v: any) => convertToPickerTerm(v)).filter(Boolean);
-        setSelectedTerms(terms);
-      } else if (value.TermGuid && value.Label) {
-        const term = convertToPickerTerm(value);
-        setSelectedTerms(term ? [term] : []);
-      } else if (typeof value === 'string') {
+    let cancelled = false;
+
+    const updateSelectedTerms = async (): Promise<void> => {
+      if (!value) {
+        if (!cancelled) setSelectedTerms([]);
+        return;
+      }
+
+      const rawTerms = Array.isArray(value) ? value : [value];
+      const resolvedTerms = await Promise.all(rawTerms.map(async (term: any) => {
+        if (term && term.TermGuid) {
+          if (isLabelLikelyId(term.Label)) {
+            const resolved = await resolveTermLabel(term.TermGuid);
+            if (resolved) {
+              return { ...term, Label: resolved };
+            }
+          }
+          return term;
+        }
+        return term;
+      }));
+
+      if (cancelled) return;
+
+      if (resolvedTerms.length === 1 && typeof resolvedTerms[0] === 'string') {
         setSelectedTerms([{
           key: '',
-          name: value,
-          path: value,
+          name: resolvedTerms[0],
+          path: resolvedTerms[0],
           termSet: termSetId,
         }]);
+        return;
       }
-    } else {
-      setSelectedTerms([]);
-    }
-  }, [value]);
+
+      const pickerTerms = resolvedTerms
+        .map((v: any) => convertToPickerTerm(v))
+        .filter(Boolean);
+      setSelectedTerms(pickerTerms);
+
+      // If we resolved any labels, sync back to form state for consistent display
+      const shouldSync = resolvedTerms.some((term: any, idx: number) => {
+        const original = rawTerms[idx];
+        return term?.TermGuid && original?.TermGuid && term?.Label !== original?.Label;
+      });
+      if (shouldSync) {
+        if (allowMultiple) {
+          onChange(resolvedTerms);
+        } else {
+          onChange(resolvedTerms[0] ?? null);
+        }
+      }
+    };
+
+    void updateSelectedTerms();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [value, termSetId, allowMultiple, resolveTermLabel, onChange]);
 
   // Helper to convert IPickerTerm to TaxonomyFieldValue
   const convertFromPickerTerm = (term: any): TaxonomyFieldValue => {

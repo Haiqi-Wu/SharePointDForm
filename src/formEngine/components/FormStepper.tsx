@@ -99,10 +99,10 @@ export const FormStepper: React.FC<FormStepperProps> = ({
       {!readOnly && (
         <div style={actionsStyle}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {onCancel && <DefaultButton onClick={onCancel} disabled={isSubmitting}>{finalCancelLabel}</DefaultButton>}
             {canGoPrev && <DefaultButton onClick={onPrev} disabled={isSubmitting}>上一步</DefaultButton>}
           </div>
-          <div>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            {onCancel && <DefaultButton onClick={onCancel} disabled={isSubmitting}>{finalCancelLabel}</DefaultButton>}
             {isLastStep ? (
               <PrimaryButton onClick={onSubmit} disabled={isSubmitting}>
                 {isSubmitting ? '提交中...' : finalSubmitLabel}

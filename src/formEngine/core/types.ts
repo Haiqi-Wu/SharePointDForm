@@ -39,6 +39,7 @@ export interface FormSchema {
   listName: string;
   itemId?: number;
   steps: FormStep[];
+  showFieldDescription?: boolean;
   submitButtonLabel?: string;
   showCancelButton?: boolean;
   cancelButtonLabel?: string;
@@ -73,6 +74,7 @@ export interface FormField {
   type: FieldType;
   label: string;
   fieldName: string;
+  description?: string;
   visible?: boolean | FilterExpression;
   required?: boolean | FilterExpression;
   readOnly?: boolean | FilterExpression;
@@ -221,6 +223,7 @@ export interface SPFieldInfo {
   id: string;
   internalName: string;
   title: string;
+  description?: string;
   type: SPFieldType;
   required: boolean;
   readOnly: boolean;

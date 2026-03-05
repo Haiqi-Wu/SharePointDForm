@@ -14,9 +14,11 @@ export class FormStateManager {
   private conditionEngine: ODataConditionEngine;
   private stateListeners: StateChangeListener[] = [];
   private fieldListeners: Map<string, FieldChangeListener[]> = new Map();
+  private forceReadOnly: boolean;
 
-  constructor(schema: FormSchema, initialValues?: Record<string, any>) {
+  constructor(schema: FormSchema, initialValues?: Record<string, any>, options?: { forceReadOnly?: boolean }) {
     this.schema = schema;
+    this.forceReadOnly = options?.forceReadOnly ?? false;
     this.conditionEngine = new ODataConditionEngine();
     this.state = this.initializeState(initialValues);
   }
@@ -191,7 +193,7 @@ export class FormStateManager {
           dirty: false,
           visible: evaluation.visible,
           required: evaluation.required,
-          readOnly: evaluation.readOnly,
+          readOnly: evaluation.readOnly || this.forceReadOnly,
           disabled: false,
           valid: true,
           errors: [],

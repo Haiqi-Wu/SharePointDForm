@@ -21,8 +21,10 @@ export interface ISharePointDynamicFormWebPartProps {
   mode: FormMode;
   useItemId: boolean;
   itemId: number;
+  itemIdQueryParam?: string;
   isInDesignerMode: boolean;
   labelPosition?: 'top' | 'left';
+  showFieldDescription?: boolean;
   // 按钮配置
   submitButtonLabel?: string;
   showCancelButton?: boolean;
@@ -55,11 +57,13 @@ export default class SharePointDynamicFormWebPart extends BaseClientSideWebPart<
         mode: this.properties.mode || 'new',
         useItemId: this.properties.useItemId || false,
         itemId: this.properties.itemId || 0,
+        itemIdQueryParam: this.properties.itemIdQueryParam || 'ID',
         isDarkTheme: this._isDarkTheme,
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
         context: this.context,
         onSaveSchema: (schema) => this.saveSchema(schema),
         isPageEditMode: this.displayMode === DisplayMode.Edit,
+        showFieldDescription: this.properties.showFieldDescription,
         // 按钮配置
         submitButtonLabel: this.properties.submitButtonLabel,
         showCancelButton: this.properties.showCancelButton,
@@ -181,6 +185,11 @@ export default class SharePointDynamicFormWebPart extends BaseClientSideWebPart<
                     { key: 'view', text: '查看' },
                   ],
                 }),
+                PropertyPaneTextField('itemIdQueryParam', {
+                  label: 'ItemId 参数名',
+                  placeholder: 'ID',
+                  value: this.properties.itemIdQueryParam,
+                }),
                 PropertyPaneDropdown('labelPosition', {
                   label: '标签位置',
                   options: [
@@ -188,6 +197,12 @@ export default class SharePointDynamicFormWebPart extends BaseClientSideWebPart<
                     { key: 'left', text: '左侧' },
                   ],
                   selectedKey: this.properties.labelPosition || 'top',
+                }),
+                PropertyPaneToggle('showFieldDescription', {
+                  label: '显示字段描述',
+                  onText: '显示',
+                  offText: '隐藏',
+                  checked: this.properties.showFieldDescription,
                 }),
               ]
             },

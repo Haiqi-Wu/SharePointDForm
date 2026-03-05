@@ -14,6 +14,7 @@ export interface StepRendererProps {
   lookupOptions?: Record<string, any[]>;
   onResolveUsers?: (filter: string) => Promise<any[]>;
   labelPosition?: 'top' | 'left';
+  showFieldDescription?: boolean;
   layout?: 'stack' | 'grid';
   columns?: number;
   spfxContext?: any;
@@ -22,7 +23,7 @@ export interface StepRendererProps {
 }
 
 export const StepRenderer: React.FC<StepRendererProps> = ({
-  step, fields, onFieldChange, onFieldBlur, lookupOptions, onResolveUsers, labelPosition = 'top', layout = 'stack', columns = 1, spfxContext, itemId, disabled,
+  step, fields, onFieldChange, onFieldBlur, lookupOptions, onResolveUsers, labelPosition = 'top', showFieldDescription, layout = 'stack', columns = 1, spfxContext, itemId, disabled,
 }) => {
   const [isNarrow, setIsNarrow] = React.useState(false);
 
@@ -133,6 +134,7 @@ export const StepRenderer: React.FC<StepRendererProps> = ({
                 lookupOptions={lookupOptions}
                 onResolveUsers={onResolveUsers}
                 labelPosition={labelPosition}
+                showFieldDescription={showFieldDescription}
                 spfxContext={spfxContext}
                 itemId={itemId}
                 disabled={disabled}

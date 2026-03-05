@@ -17,12 +17,14 @@ export interface SharePointDynamicFormContainerProps {
   mode: FormMode;
   useItemId: boolean;
   itemId: number;
+  itemIdQueryParam?: string;
   isDarkTheme: boolean;
   hasTeamsContext: boolean;
   context: any;
   onSaveSchema: (schema: FormSchema) => void;
   labelPosition?: 'top' | 'left';
   isPageEditMode: boolean;
+  showFieldDescription?: boolean;
   // 按钮配置
   submitButtonLabel?: string;
   showCancelButton?: boolean;
@@ -38,12 +40,15 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
   formSchemaJson,
   listName,
   mode,
+  useItemId,
   itemId,
+  itemIdQueryParam,
   context,
   isDarkTheme,
   onSaveSchema,
   labelPosition = 'top',
   isPageEditMode = false,
+  showFieldDescription,
   // 按钮配置
   submitButtonLabel,
   showCancelButton,
@@ -67,6 +72,55 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
   const [saveError, setSaveError] = React.useState<string | null>(null);
 
   const dataSource = React.useMemo(() => new SharePointDataSource(context), [context]);
+
+  const getODataFieldName = React.useCallback((fieldName: string): string => {
+    if (!fieldName) return fieldName;
+    if (fieldName.startsWith('OData__')) return fieldName;
+    if (fieldName.startsWith('_')) return `OData__${fieldName.slice(1)}`;
+    return fieldName;
+  }, []);
+
+  const getItemIdFromUrl = React.useCallback((): number => {
+    if (typeof window === 'undefined') return 0;
+    const params = new URLSearchParams(window.location.search);
+    const trimmedKey = itemIdQueryParam ? itemIdQueryParam.trim() : '';
+    const primaryKey = trimmedKey || 'ID';
+    const keys = [
+      primaryKey,
+      ...['ID', 'Id', 'id', 'ItemId', 'itemId', 'ListItemId', 'listItemId']
+    ].filter((key, index, arr) => key && arr.indexOf(key) === index);
+    for (const key of keys) {
+      const value = params.get(key);
+      if (!value) continue;
+      const parsed = parseInt(value, 10);
+      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    }
+    return 0;
+  }, [itemIdQueryParam]);
+
+  const getItemIdFromContext = React.useCallback((): number => {
+    const ctxId = context?.pageContext?.listItem?.id;
+    if (typeof ctxId === 'number' && Number.isFinite(ctxId) && ctxId > 0) {
+      return ctxId;
+    }
+    if (typeof ctxId === 'string') {
+      const parsed = parseInt(ctxId, 10);
+      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    }
+    return 0;
+  }, [context]);
+
+  const urlItemId = React.useMemo(() => getItemIdFromUrl(), [getItemIdFromUrl]);
+  const contextItemId = React.useMemo(() => getItemIdFromContext(), [getItemIdFromContext]);
+  const resolvedItemId = React.useMemo(() => {
+    if (mode === 'edit' || mode === 'view') {
+      return urlItemId || contextItemId || itemId || 0;
+    }
+    if (useItemId) {
+      return urlItemId || contextItemId || itemId || 0;
+    }
+    return itemId || 0;
+  }, [mode, useItemId, urlItemId, contextItemId, itemId]);
 
   // 清理 schema 数据，确保字段属性正确
   const sanitizeSchema = React.useCallback((schema: FormSchema): FormSchema => {
@@ -137,39 +191,153 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
     };
   }, []);
 
+  const getItemValueByFieldName = React.useCallback((item: any, fieldName: string): any => {
+    if (!item || !fieldName) return undefined;
+    if (Object.prototype.hasOwnProperty.call(item, fieldName)) {
+      return item[fieldName];
+    }
+    const lowered = fieldName.toLowerCase();
+    const matchedKey = Object.keys(item).find((k) => k.toLowerCase() === lowered);
+    return matchedKey ? item[matchedKey] : undefined;
+  }, []);
+
   // 从 SharePoint 对象中提取原始值
   const extractFieldValue = (item: any, fieldName: string, fieldType: string): any => {
-    const value = item[fieldName];
-    if (value == null) return undefined;
+    const odataFieldName = getODataFieldName(fieldName);
+    const value = getItemValueByFieldName(item, fieldName) ?? getItemValueByFieldName(item, odataFieldName);
+    const taxonomyGuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    const parseTaxonomyString = (text: string): any => {
+      if (!text) return undefined;
+      const parts = text.split(';#').filter(p => p !== '');
+      const terms: any[] = [];
+      let pendingLabel: string | null = null;
+      let pendingWssId: number | null = null;
+
+      for (const part of parts) {
+        if (part.includes('|')) {
+          const [label, guid] = part.split('|');
+          if (label && guid && taxonomyGuidRegex.test(guid)) {
+            terms.push({ Label: label, TermGuid: guid, WssId: pendingWssId ?? -1 });
+          }
+          pendingLabel = null;
+          pendingWssId = null;
+          continue;
+        }
+
+        if (/^-?\d+$/.test(part)) {
+          pendingWssId = parseInt(part, 10);
+          continue;
+        }
+
+        if (taxonomyGuidRegex.test(part)) {
+          if (pendingLabel) {
+            terms.push({ Label: pendingLabel, TermGuid: part, WssId: pendingWssId ?? -1 });
+          }
+          pendingLabel = null;
+          pendingWssId = null;
+          continue;
+        }
+
+        pendingLabel = part;
+      }
+
+      if (terms.length === 1) return terms[0];
+      if (terms.length > 1) return terms;
+      return text;
+    };
 
     switch (fieldType) {
       case 'person':
         // Person field: extract array or single object
-        return Array.isArray(value) ? value : (value.Id ? value : null);
+        if (value == null) {
+          const idValue = getItemValueByFieldName(item, `${fieldName}Id`) ?? getItemValueByFieldName(item, `${odataFieldName}Id`);
+          if (Array.isArray(idValue?.results)) {
+            return idValue.results.map((id: number) => ({ Id: id }));
+          }
+          if (Array.isArray(idValue)) {
+            return idValue.map((id: number) => ({ Id: id }));
+          }
+          if (typeof idValue === 'number') {
+            return { Id: idValue };
+          }
+          return undefined;
+        }
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'object') return value;
+        if (typeof value === 'number') return { Id: value };
+        return null;
       case 'lookup':
         // Lookup field: extract the lookup value
-        return value.Id ? value : null;
+        if (value == null) {
+          const idValue = getItemValueByFieldName(item, `${fieldName}Id`) ?? getItemValueByFieldName(item, `${odataFieldName}Id`);
+          if (Array.isArray(idValue?.results)) {
+            return idValue.results.map((id: number) => ({ Id: id }));
+          }
+          if (Array.isArray(idValue)) {
+            return idValue.map((id: number) => ({ Id: id }));
+          }
+          if (typeof idValue === 'number') {
+            return { Id: idValue };
+          }
+          return undefined;
+        }
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'object') return value.Id ? value : value;
+        if (typeof value === 'number') return { Id: value };
+        return null;
       case 'multiselect':
         // Multi-select: return choices array directly
-        return Array.isArray(value) ? value : [];
+        if (value == null) return [];
+        if (Array.isArray(value)) return value;
+        if (value?.results && Array.isArray(value.results)) return value.results;
+        if (typeof value === 'string' && value) return [value];
+        return [];
+      case 'taxonomy': {
+        if (value == null) return undefined;
+        if (Array.isArray(value)) return value;
+        if (value?.results && Array.isArray(value.results)) {
+          const parsed = value.results.map((v: any) => {
+            if (!v) return null;
+            if (typeof v === 'string') return parseTaxonomyString(v);
+            if (v.Label && v.TermGuid) return v;
+            return v;
+          }).filter(Boolean);
+          if (parsed.length === 1) return parsed[0];
+          if (parsed.length > 1) return parsed;
+        }
+        if (typeof value === 'string') return parseTaxonomyString(value);
+        if (value?.Label && value?.TermGuid) return value;
+        return value;
+      }
       case 'datetime': {
+        if (value == null) return undefined;
         // DateTime: ensure it's a valid ISO string
         const date = new Date(value);
         return isNaN(date.getTime()) ? undefined : value;
       }
       case 'boolean':
+        if (value == null) return undefined;
         // Boolean: ensure it's a boolean
         return typeof value === 'boolean' ? value : value === 'true';
       case 'image':
+        if (value == null) return undefined;
         // Image field: SharePoint returns { serverRelativeUrl, fileName } or similar
         if (typeof value === 'string') {
           return { url: value };
         }
         // Return as-is (contains serverRelativeUrl, fileName, etc.)
         return value;
+      case 'url':
+        if (value == null) return undefined;
+        if (typeof value === 'string') return value;
+        if (value?.Url) {
+          return { url: value.Url, description: value.Description || '' };
+        }
+        return value;
       default:
         // For text, number, etc. return as-is
-        return value;
+        return value == null ? undefined : value;
     }
   };
 
@@ -192,14 +360,28 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
         // 运行模式才需要清理数据
         setSchema(isInDesignerMode ? parsedSchema : sanitizeSchema(parsedSchema));
 
-        // 如果是编辑模式，加载现有数据
+        // 如果是编辑/查看模式，加载现有数据
         const values: Record<string, any> = {};
-        if (itemId && mode === 'edit') {
-          const item = await dataSource.getItem(parsedSchema.listName || listName, itemId);
+        if ((mode === 'edit' || mode === 'view') && !resolvedItemId) {
+          setError('未从 URL 获取到 Item ID，无法加载表单数据。');
+          return;
+        }
+
+        if (resolvedItemId && (mode === 'edit' || mode === 'view')) {
+          const fieldDefs = parsedSchema.steps.flatMap(step => step.fields.filter((f): f is NonNullable<typeof f> => Boolean(f)));
+          const odataFieldDefs = fieldDefs.map(field => ({
+            ...field,
+            fieldName: getODataFieldName(field.fieldName),
+          }));
+          const item = await dataSource.getItem(parsedSchema.listName || listName, resolvedItemId, odataFieldDefs);
           for (const step of parsedSchema.steps) {
             for (const field of step.fields) {
               if (field) { // 检查 null
-                values[field.id] = extractFieldValue(item, field.fieldName, field.type);
+                const extracted = extractFieldValue(item, field.fieldName, field.type);
+                if (extracted !== undefined) {
+                  values[field.id] = extracted;
+                  values[field.fieldName] = extracted;
+                }
               }
             }
           }
@@ -225,7 +407,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
     };
 
     void loadData();
-  }, [context, formSchemaJson, listName, mode, itemId, dataSource]);
+  }, [context, formSchemaJson, listName, mode, resolvedItemId, dataSource, sanitizeSchema, isInDesignerMode, getODataFieldName]);
 
   const handleResolveUsers = async (filter: string): Promise<any[]> => {
     try {
@@ -378,13 +560,15 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
 
           const fieldValue = values[field.id];
 
+          const odataFieldName = getODataFieldName(field.fieldName);
+
           // People/Lookup 字段必须使用 *Id 属性更新，否则 SharePoint 会忽略改动
           if (field.type === 'person') {
             const allowMultiple = field.config?.allowMultiple ?? Array.isArray(fieldValue);
             const ids = Array.isArray(fieldValue)
               ? fieldValue.filter((v: any) => v && v.Id).map((v: any) => v.Id)
               : (fieldValue?.Id ? [fieldValue.Id] : []);
-            const key = `${field.fieldName}Id`;
+            const key = `${odataFieldName}Id`;
             itemData[key] = allowMultiple ? { results: ids || [] } : (ids[0] ?? null);
             continue;
           }
@@ -394,7 +578,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
             const ids = Array.isArray(fieldValue)
               ? fieldValue.filter((v: any) => v && v.Id).map((v: any) => v.Id)
               : (fieldValue?.Id ? [fieldValue.Id] : []);
-            const key = `${field.fieldName}Id`;
+            const key = `${odataFieldName}Id`;
             itemData[key] = allowMultiple ? { results: ids || [] } : (ids[0] ?? null);
             continue;
           }
@@ -402,16 +586,16 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
           const convertedValue = convertValueForSP(fieldValue, field);
           // 跳过 null/undefined 值，让 SharePoint 使用默认值
           if (convertedValue !== null && convertedValue !== undefined) {
-            itemData[field.fieldName] = convertedValue;
+            itemData[odataFieldName] = convertedValue;
           }
         }
       }
 
       const targetList = schema.listName || listName;
-      let createdItemId: number | undefined = itemId;
+      let createdItemId: number | undefined = resolvedItemId;
 
-      if (itemId && mode === 'edit') {
-        await dataSource.updateItem(targetList, itemId, itemData);
+      if (resolvedItemId && mode === 'edit') {
+        await dataSource.updateItem(targetList, resolvedItemId, itemData);
       } else {
         const newItem = await dataSource.createItem(targetList, itemData);
         createdItemId = newItem?.Id;
@@ -532,11 +716,12 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
       <FormRenderer
         schema={{
           ...schema,
-          itemId: itemId,
+          itemId: resolvedItemId,
           theme: {
             ...schema.theme,
             labelPosition,
           },
+          ...(showFieldDescription !== undefined && { showFieldDescription }),
           // Web Part 按钮配置覆盖 schema 中的配置
           ...(submitButtonLabel && { submitButtonLabel }),
           ...(showCancelButton !== undefined && { showCancelButton }),

@@ -59,6 +59,7 @@ export interface FieldComponentProps {
   lookupOptions?: any[];
   onResolveUsers?: (filter: string) => Promise<any[]>;
   labelPosition?: 'top' | 'left';
+  showFieldDescription?: boolean;
   spfxContext?: any;
   itemId?: number;
 }
@@ -98,6 +99,7 @@ export function renderField(props: FieldComponentProps): ReactNode {
       onBlur={props.onBlur}
       disabled={props.disabled}
       labelPosition={props.labelPosition}
+      showFieldDescription={props.showFieldDescription}
       spfxContext={props.spfxContext}
     >
       <Component
