@@ -170,74 +170,74 @@ export default class SharePointDynamicFormWebPart extends BaseClientSideWebPart<
           },
           groups: [
             {
-              groupName: '基本设置',
+              groupName: strings.PropertyGroupBasic,
               groupFields: [
                 PropertyPaneDropdown('listName', {
-                  label: 'SharePoint 列表',
+                  label: strings.PropListLabel,
                   options: this._lists,
                   selectedKey: this.properties.listName,
                 }),
                 PropertyPaneDropdown('mode', {
-                  label: '表单模式',
+                  label: strings.PropModeLabel,
                   options: [
-                    { key: 'new', text: '新建' },
-                    { key: 'edit', text: '编辑' },
-                    { key: 'view', text: '查看' },
+                    { key: 'new', text: strings.PropModeNew },
+                    { key: 'edit', text: strings.PropModeEdit },
+                    { key: 'view', text: strings.PropModeView },
                   ],
                 }),
                 PropertyPaneTextField('itemIdQueryParam', {
-                  label: 'ItemId 参数名',
+                  label: strings.PropItemIdQueryParamLabel,
                   placeholder: 'ID',
                   value: this.properties.itemIdQueryParam,
                 }),
                 PropertyPaneDropdown('labelPosition', {
-                  label: '标签位置',
+                  label: strings.PropLabelPositionLabel,
                   options: [
-                    { key: 'top', text: '上方' },
-                    { key: 'left', text: '左侧' },
+                    { key: 'top', text: strings.PropLabelTop },
+                    { key: 'left', text: strings.PropLabelLeft },
                   ],
                   selectedKey: this.properties.labelPosition || 'top',
                 }),
                 PropertyPaneToggle('showFieldDescription', {
-                  label: '显示字段描述',
-                  onText: '显示',
-                  offText: '隐藏',
+                  label: strings.PropShowFieldDescriptionLabel,
+                  onText: strings.PropToggleOn,
+                  offText: strings.PropToggleOff,
                   checked: this.properties.showFieldDescription,
                 }),
               ]
             },
             {
-              groupName: '按钮配置',
+              groupName: strings.PropertyGroupButtons,
               groupFields: [
                 PropertyPaneTextField('submitButtonLabel', {
-                  label: '提交按钮文字',
-                  placeholder: '提交（默认）',
+                  label: strings.PropSubmitButtonLabel,
+                  placeholder: strings.PropSubmitButtonPlaceholder,
                   value: this.properties.submitButtonLabel,
                 }),
                 PropertyPaneToggle('showCancelButton', {
-                  label: '显示取消按钮',
-                  onText: '显示',
-                  offText: '隐藏',
+                  label: strings.PropShowCancelButtonLabel,
+                  onText: strings.PropToggleOn,
+                  offText: strings.PropToggleOff,
                   checked: this.properties.showCancelButton,
                 }),
                 PropertyPaneTextField('cancelButtonLabel', {
-                  label: '取消按钮文字',
-                  placeholder: '取消（默认）',
+                  label: strings.PropCancelButtonLabel,
+                  placeholder: strings.PropCancelButtonPlaceholder,
                   value: this.properties.cancelButtonLabel,
                 }),
                 PropertyPaneTextField('cancelRedirectUrl', {
-                  label: '取消后跳转URL',
-                  placeholder: '留空则关闭表单',
+                  label: strings.PropCancelRedirectUrlLabel,
+                  placeholder: strings.PropCancelRedirectUrlPlaceholder,
                   value: this.properties.cancelRedirectUrl,
                 }),
                 PropertyPaneTextField('submitRedirectUrl', {
-                  label: '提交后跳转URL',
-                  placeholder: '留空则显示成功消息',
+                  label: strings.PropSubmitRedirectUrlLabel,
+                  placeholder: strings.PropSubmitRedirectUrlPlaceholder,
                   value: this.properties.submitRedirectUrl,
                 }),
                 PropertyPaneTextField('onSubmitMessage', {
-                  label: '提交成功消息',
-                  placeholder: '表单提交成功！（默认）',
+                  label: strings.PropSubmitSuccessMessageLabel,
+                  placeholder: strings.PropSubmitSuccessMessagePlaceholder,
                   value: this.properties.onSubmitMessage,
                   multiline: true,
                   resizable: true,

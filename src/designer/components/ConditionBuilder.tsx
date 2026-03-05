@@ -3,8 +3,10 @@
  */
 
 import * as React from 'react';
+import { Text as CoreText } from '@microsoft/sp-core-library';
 import { Dropdown, TextField, PrimaryButton, DefaultButton, Label, Text } from '@fluentui/react';
 import { FormField } from '../../formEngine/core/types';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface ConditionRule {
   field: string;
@@ -19,14 +21,14 @@ export interface ConditionBuilderProps {
 }
 
 const operatorOptions = [
-  { key: 'eq', text: '等于' },
-  { key: 'ne', text: '不等于' },
-  { key: 'gt', text: '大于' },
-  { key: 'ge', text: '大于或等于' },
-  { key: 'lt', text: '小于' },
-  { key: 'le', text: '小于或等于' },
-  { key: 'contains', text: '包含' },
-  { key: 'startswith', text: '开始于' },
+  { key: 'eq', text: strings.ConditionOpEq },
+  { key: 'ne', text: strings.ConditionOpNe },
+  { key: 'gt', text: strings.ConditionOpGt },
+  { key: 'ge', text: strings.ConditionOpGe },
+  { key: 'lt', text: strings.ConditionOpLt },
+  { key: 'le', text: strings.ConditionOpLe },
+  { key: 'contains', text: strings.ConditionOpContains },
+  { key: 'startswith', text: strings.ConditionOpStartsWith },
 ];
 
 export const ConditionBuilder: React.FC<ConditionBuilderProps> = ({
@@ -145,9 +147,9 @@ export const ConditionBuilder: React.FC<ConditionBuilderProps> = ({
 
   return (
     <div>
-      <Label style={{ marginBottom: 8, fontWeight: 600 }}>可见性条件</Label>
+      <Label style={{ marginBottom: 8, fontWeight: 600 }}>{strings.ConditionVisibilityLabel}</Label>
       <Text variant="small" block style={{ marginBottom: 12, color: '#605e5c' }}>
-        设置字段何时显示。留空则始终显示。
+        {strings.ConditionVisibilityDesc}
       </Text>
 
       <div>
@@ -161,26 +163,26 @@ export const ConditionBuilder: React.FC<ConditionBuilderProps> = ({
             color: '#605e5c',
             marginBottom: '12px',
           }}>
-            暂无条件设置，字段将始终显示
+            {strings.ConditionNoRules}
           </div>
         ) : (
           rules.map((rule, index) => (
             <div key={index} style={ruleContainerStyle}>
               <div style={headerStyle}>
-                <span style={ruleNumberStyle}>条件 {index + 1}</span>
+                <span style={ruleNumberStyle}>{CoreText.format(strings.ConditionRuleLabel, String(index + 1))}</span>
                 <DefaultButton
                   onClick={() => handleRemoveRule(index)}
                   styles={{ root: { minWidth: 'auto', padding: '4px 12px' } }}
                 >
-                  删除
+                  {strings.DesignerDelete}
                 </DefaultButton>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div>
-                  <Label style={{ marginBottom: 4, fontSize: 13, fontWeight: 600 }}>字段</Label>
+                  <Label style={{ marginBottom: 4, fontSize: 13, fontWeight: 600 }}>{strings.ConditionFieldLabel}</Label>
                   <Dropdown
-                    placeholder="选择字段"
+                    placeholder={strings.ConditionFieldPlaceholder}
                     options={fieldOptions}
                     selectedKey={rule.field || null}
                     onChange={(_, option) => handleRuleChange(index, 'field', option?.key?.toString() || '')}
@@ -189,7 +191,7 @@ export const ConditionBuilder: React.FC<ConditionBuilderProps> = ({
                 </div>
 
                 <div>
-                  <Label style={{ marginBottom: 4, fontSize: 13, fontWeight: 600 }}>操作符</Label>
+                  <Label style={{ marginBottom: 4, fontSize: 13, fontWeight: 600 }}>{strings.ConditionOperatorLabel}</Label>
                   <Dropdown
                     options={operatorOptions}
                     selectedKey={rule.operator}
@@ -199,9 +201,9 @@ export const ConditionBuilder: React.FC<ConditionBuilderProps> = ({
                 </div>
 
                 <div>
-                  <Label style={{ marginBottom: 4, fontSize: 13, fontWeight: 600 }}>值</Label>
+                  <Label style={{ marginBottom: 4, fontSize: 13, fontWeight: 600 }}>{strings.ConditionValueLabel}</Label>
                   <TextField
-                    placeholder="输入比较的值"
+                    placeholder={strings.ConditionValuePlaceholder}
                     value={rule.value}
                     onChange={(_, value) => handleRuleChange(index, 'value', value || '')}
                     styles={{ root: { width: '100%' } }}
@@ -219,7 +221,7 @@ export const ConditionBuilder: React.FC<ConditionBuilderProps> = ({
                   fontSize: '13px',
                   fontWeight: 600,
                 }}>
-                  且
+                  {strings.ConditionAnd}
                 </div>
               )}
             </div>
@@ -230,12 +232,12 @@ export const ConditionBuilder: React.FC<ConditionBuilderProps> = ({
           onClick={handleAddRule}
           styles={{ root: { width: '100%' } }}
         >
-          + 添加条件
+          {strings.ConditionAdd}
         </PrimaryButton>
       </div>
 
       <Text variant="xSmall" block style={{ color: '#605e5c', marginTop: 12 }}>
-        💡 提示：所有条件之间是&quot;与&quot;的关系（必须同时满足）。例如：部门等于&quot;IT&quot; 且状态不等于&quot;已关闭&quot;
+        {strings.ConditionHint}
       </Text>
     </div>
   );

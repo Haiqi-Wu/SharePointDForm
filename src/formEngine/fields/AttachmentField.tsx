@@ -3,6 +3,7 @@
  */
 
 import * as React from 'react';
+import { Text as CoreText } from '@microsoft/sp-core-library';
 import { BaseFieldProps } from './BaseField';
 import { ListItemAttachments } from '@pnp/spfx-controls-react/lib/ListItemAttachments';
 import { MessageBar, MessageBarType, DefaultButton, IconButton, Text } from '@fluentui/react';
@@ -11,6 +12,7 @@ import { SPFx as spSPFx } from '@pnp/sp/presets/all';
 import '@pnp/sp/lists/web';
 import './AttachmentField.css';
 import './PnpControlCompat.css';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface AttachmentFieldValue {
   // Value is managed by the ListItemAttachments component
@@ -43,7 +45,7 @@ export const AttachmentField: React.FC<AttachmentFieldProps> = ({
   React.useEffect(() => {
     const fetchListId = async () => {
       if (!spfxContext) {
-        setError('缺少 SharePoint Context');
+        setError(strings.FieldAttachmentMissingContext);
         return;
       }
 
@@ -59,7 +61,7 @@ export const AttachmentField: React.FC<AttachmentFieldProps> = ({
       }
 
       if (!listName) {
-        setError('请在表单配置中指定列表名称');
+        setError(strings.FieldAttachmentNeedListName);
         return;
       }
 
@@ -72,7 +74,7 @@ export const AttachmentField: React.FC<AttachmentFieldProps> = ({
         setListId(list.Id);
       } catch (err) {
         console.error('Error fetching list ID:', err);
-        setError(`无法获取列表 "${listName}" 的 ID`);
+        setError(CoreText.format(strings.FieldAttachmentLoadListFailed, listName));
       } finally {
         setLoading(false);
       }
@@ -95,7 +97,7 @@ export const AttachmentField: React.FC<AttachmentFieldProps> = ({
   if (loading) {
     return (
       <MessageBar messageBarType={MessageBarType.info}>
-        正在加载列表信息...
+        {strings.FieldAttachmentLoadingList}
       </MessageBar>
     );
   }
@@ -113,7 +115,7 @@ export const AttachmentField: React.FC<AttachmentFieldProps> = ({
   if (!listId && !listName) {
     return (
       <MessageBar messageBarType={MessageBarType.warning}>
-        请在表单配置中指定列表名称或列表 ID（GUID）以启用附件功能。
+        {strings.FieldAttachmentNeedListInfo}
       </MessageBar>
     );
   }
@@ -130,7 +132,7 @@ export const AttachmentField: React.FC<AttachmentFieldProps> = ({
     return (
       <div className="spdf-attachments spdf-attachments--new">
         <MessageBar messageBarType={MessageBarType.info}>
-          附件将在提交时统一上传。
+          {strings.FieldAttachmentUploadOnSubmit}
         </MessageBar>
         <div className="spdf-attachments__picker">
           <input
@@ -143,7 +145,7 @@ export const AttachmentField: React.FC<AttachmentFieldProps> = ({
             }}
           />
           {!isReadOnly && selectedFiles.length > 0 && (
-            <DefaultButton onClick={() => updateSelectedFiles([])}>清空</DefaultButton>
+            <DefaultButton onClick={() => updateSelectedFiles([])}>{strings.FieldAttachmentClear}</DefaultButton>
           )}
         </div>
         {selectedFiles.length > 0 && (
@@ -154,7 +156,7 @@ export const AttachmentField: React.FC<AttachmentFieldProps> = ({
                 {!isReadOnly && (
                   <IconButton
                     iconProps={{ iconName: 'Cancel' }}
-                    ariaLabel="移除附件"
+                    ariaLabel={strings.FieldAttachmentRemoveAria}
                     onClick={() => {
                       const next = selectedFiles.filter((_, i) => i !== index);
                       updateSelectedFiles(next);
@@ -166,7 +168,7 @@ export const AttachmentField: React.FC<AttachmentFieldProps> = ({
           </ul>
         )}
         {selectedFiles.length === 0 && (
-          <Text variant="small" className="spdf-attachments__empty">尚未选择附件</Text>
+          <Text variant="small" className="spdf-attachments__empty">{strings.FieldAttachmentEmpty}</Text>
         )}
       </div>
     );

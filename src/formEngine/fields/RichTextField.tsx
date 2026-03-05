@@ -5,6 +5,7 @@
 
 import * as React from 'react';
 import { BaseFieldProps } from './BaseField';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export const RichTextField: React.FC<BaseFieldProps> = ({
   field, state, value, onChange, onBlur, disabled,
@@ -28,7 +29,7 @@ export const RichTextField: React.FC<BaseFieldProps> = ({
           dangerouslySetInnerHTML={{ __html: displayValue }}
         />
       ) : (
-        <div style={{ color: '#a19f9d', fontStyle: 'italic' }}>暂无内容</div>
+        <div style={{ color: '#a19f9d', fontStyle: 'italic' }}>{strings.FieldRichTextEmpty}</div>
       )}
     </div>
   );

@@ -3,6 +3,7 @@
  */
 
 import * as React from 'react';
+import { Text } from '@microsoft/sp-core-library';
 import { FormMode, FormSchema, FormState } from '../core/types';
 import { FormStateManager } from '../core/FormStateManager';
 import { ValidationEngine } from '../core/ValidationEngine';
@@ -19,6 +20,7 @@ import {
   ProgressIndicator,
   Link,
 } from '@fluentui/react';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface FormRendererProps {
   schema: FormSchema;
@@ -62,7 +64,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
 
   const effectiveMode: FormMode = mode || schema.mode;
   const isReadOnly = effectiveMode === 'view';
-  const cancelLabel = schema.cancelButtonLabel || '取消';
+  const cancelLabel = schema.cancelButtonLabel || strings.CommonCancel;
   const cancelRedirectUrl = schema.cancelRedirectUrl?.trim() || '';
   const submitRedirectUrl = schema.submitRedirectUrl?.trim() || '';
   const submitRedirectDelay = Math.max(0, schema.submitRedirectDelayMs ?? 1500);
@@ -121,7 +123,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
       items.push({
         id: fieldId,
         label: field.label || field.fieldName || fieldId,
-        message: fieldErrors[0] || '格式不正确',
+        message: fieldErrors[0] || strings.FormInvalidMessageDefault,
       });
     }
     return items;
@@ -197,7 +199,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
     }
 
     if (hasErrors) {
-      setStepValidationError('请完成所有必填项后再继续');
+      setStepValidationError(strings.FormStepValidationError);
       // 滚动到第一个错误字段
       if (firstErrorFieldId) {
         scrollToField(firstErrorFieldId);
@@ -269,7 +271,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
         }, submitRedirectDelay);
       }
     } catch (err: any) {
-      setSubmitError(err.message || '提交失败，请重试');
+      setSubmitError(err.message || strings.FormSubmitFailedDefault);
     } finally {
       stateManagerRef.current.setSubmitting(false);
     }
@@ -321,14 +323,14 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
     resetForm();
   }, [onCancel, resetForm, isReadOnly]);
 
-  if (!state) return <div className="form-loading">加载中...</div>;
+  if (!state) return <div className="form-loading">{strings.CommonLoading}</div>;
 
   const currentStepData = schema.steps[state.currentStep];
   const values = state.fields;
   const canGoPrev = state.currentStep > 0;
   const stepTitles = schema.steps.map(step => step.title);
-  const submitLabel = schema.submitButtonLabel || (effectiveMode === 'edit' ? '保存' : '提交');
-  const successMessage = schema.onSubmitMessage || (effectiveMode === 'edit' ? '更新成功！' : '提交成功！');
+  const submitLabel = schema.submitButtonLabel || (effectiveMode === 'edit' ? strings.FormSubmitLabelEdit : strings.CommonSubmit);
+  const successMessage = schema.onSubmitMessage || (effectiveMode === 'edit' ? strings.FormSubmitSuccessEdit : strings.FormSubmitSuccessNew);
   const showCancelButton = !isReadOnly && schema.showCancelButton !== false;
 
   // 如果当前步骤不可见，显示提示
@@ -340,8 +342,8 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
           textAlign: 'center',
           color: '#605e5c',
         }}>
-          <p style={{ fontSize: 16, marginBottom: 16 }}>当前步骤不可见</p>
-          <p style={{ fontSize: 14 }}>请通过其他字段的配置来控制此步骤的显示</p>
+          <p style={{ fontSize: 16, marginBottom: 16 }}>{strings.FormStepHiddenTitle}</p>
+          <p style={{ fontSize: 14 }}>{strings.FormStepHiddenDescription}</p>
         </div>
       </div>
     );
@@ -353,9 +355,9 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
         <MessageBar messageBarType={MessageBarType.info} className="form-message">
           <div className="form-progress">
             <div>
-              正在上传附件
+              {strings.FormUploadingAttachments}
               {submitProgress.total ? ` (${submitProgress.completed || 0}/${submitProgress.total})` : ''}
-              {submitProgress.currentFile ? `：${submitProgress.currentFile}` : ''}
+              {submitProgress.currentFile ? `: ${submitProgress.currentFile}` : ''}
             </div>
             {submitProgress.total ? (
               <ProgressIndicator percentComplete={(submitProgress.completed || 0) / submitProgress.total} />
@@ -373,7 +375,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
           className="form-message"
           actions={
             <div className="form-message__actions">
-              <DefaultButton onClick={handleSubmit} disabled={state.isSubmitting}>重试</DefaultButton>
+              <DefaultButton onClick={handleSubmit} disabled={state.isSubmitting}>{strings.CommonRetry}</DefaultButton>
             </div>
           }
         >
@@ -384,11 +386,11 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
       {errorSummary && errorSummary.length > 0 && (
         <MessageBar messageBarType={MessageBarType.error} onDismiss={() => setErrorSummary(null)} className="form-message">
           <div className="form-error-summary">
-            <div>表单还有 {errorSummary.length} 处错误：</div>
+            <div>{Text.format(strings.FormErrorSummaryTitle, String(errorSummary.length))}</div>
             <ul>
               {errorSummary.slice(0, 6).map((item) => (
                 <li key={item.id}>
-                  <Link onClick={() => scrollToField(item.id)}>{item.label}</Link>：{item.message}
+                  <Link onClick={() => scrollToField(item.id)}>{item.label}</Link>: {item.message}
                 </li>
               ))}
             </ul>
@@ -412,7 +414,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
               <DefaultButton onClick={() => {
                 setSubmitSuccess(false);
                 resetForm();
-              }}>继续新增</DefaultButton>
+              }}>{strings.CommonContinueCreate}</DefaultButton>
             </div>
           ) : undefined}
         >
@@ -463,7 +465,7 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
               <DefaultButton onClick={handleCancel} disabled={state.isSubmitting}>{cancelLabel}</DefaultButton>
             )}
             <PrimaryButton onClick={handleSubmit} disabled={state.isSubmitting}>
-              {state.isSubmitting ? '提交中...' : submitLabel}
+              {state.isSubmitting ? strings.CommonSubmitting : submitLabel}
             </PrimaryButton>
           </div>
         </div>
@@ -474,13 +476,13 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
         onDismiss={() => setShowCancelConfirm(false)}
         dialogContentProps={{
           type: DialogType.normal,
-          title: '确认取消',
-          subText: '当前有未保存的修改，确定要放弃这些更改吗？',
+          title: strings.DialogCancelTitle,
+          subText: strings.DialogCancelSubText,
         }}
       >
         <DialogFooter>
-          <PrimaryButton onClick={handleCancelConfirmed}>放弃修改</PrimaryButton>
-          <DefaultButton onClick={() => setShowCancelConfirm(false)}>继续编辑</DefaultButton>
+          <PrimaryButton onClick={handleCancelConfirmed}>{strings.DialogDiscardChanges}</PrimaryButton>
+          <DefaultButton onClick={() => setShowCancelConfirm(false)}>{strings.CommonContinueEditing}</DefaultButton>
         </DialogFooter>
       </Dialog>
     </div>

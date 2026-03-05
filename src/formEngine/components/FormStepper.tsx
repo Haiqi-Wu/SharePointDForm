@@ -4,6 +4,7 @@
 
 import * as React from 'react';
 import { PrimaryButton, DefaultButton } from '@fluentui/react';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface FormStepperProps {
   currentStep: number;
@@ -26,8 +27,8 @@ export const FormStepper: React.FC<FormStepperProps> = ({
   onNext, onPrev, onSubmit, onStepClick, onCancel, readOnly, submitLabel, cancelLabel,
 }) => {
   const isLastStep = currentStep === totalSteps - 1;
-  const finalSubmitLabel = submitLabel || '提交';
-  const finalCancelLabel = cancelLabel || '取消';
+  const finalSubmitLabel = submitLabel || strings.CommonSubmit;
+  const finalCancelLabel = cancelLabel || strings.CommonCancel;
 
   const stepStyle: React.CSSProperties = {
     display: 'flex',
@@ -99,16 +100,16 @@ export const FormStepper: React.FC<FormStepperProps> = ({
       {!readOnly && (
         <div style={actionsStyle}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            {canGoPrev && <DefaultButton onClick={onPrev} disabled={isSubmitting}>上一步</DefaultButton>}
+            {canGoPrev && <DefaultButton onClick={onPrev} disabled={isSubmitting}>{strings.StepPrev}</DefaultButton>}
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             {onCancel && <DefaultButton onClick={onCancel} disabled={isSubmitting}>{finalCancelLabel}</DefaultButton>}
             {isLastStep ? (
               <PrimaryButton onClick={onSubmit} disabled={isSubmitting}>
-                {isSubmitting ? '提交中...' : finalSubmitLabel}
+                {isSubmitting ? strings.CommonSubmitting : finalSubmitLabel}
               </PrimaryButton>
             ) : (
-              <PrimaryButton onClick={onNext} disabled={isSubmitting}>下一步</PrimaryButton>
+              <PrimaryButton onClick={onNext} disabled={isSubmitting}>{strings.StepNext}</PrimaryButton>
             )}
           </div>
         </div>

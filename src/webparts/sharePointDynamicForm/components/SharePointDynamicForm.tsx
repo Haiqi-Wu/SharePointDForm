@@ -1,13 +1,14 @@
 import * as React from 'react';
 import styles from './SharePointDynamicForm.module.scss';
-import type { ISharePointDynamicFormProps } from './ISharePointDynamicFormProps';
 import { FormRenderer } from '../../../formEngine/components/FormRenderer';
 import { FormDesigner } from '../../../designer/components/FormDesigner';
 import { SharePointDataSource } from '../../../formEngine/data/SharePointDataSource';
 import { FormSchema, FormMode } from '../../../formEngine/core/types';
-import { MessageBar, MessageBarType, PrimaryButton, DefaultButton, Dialog, DialogType, DialogFooter } from '@fluentui/react';
+import { Text } from '@microsoft/sp-core-library';
+import { MessageBar, MessageBarType, PrimaryButton, DefaultButton } from '@fluentui/react';
 import { BlankTemplate } from '../../../templates/formTemplates';
 import { SPHttpClient } from '@microsoft/sp-http';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface SharePointDynamicFormContainerProps {
   isInDesignerMode: boolean;
@@ -363,7 +364,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
         // 如果是编辑/查看模式，加载现有数据
         const values: Record<string, any> = {};
         if ((mode === 'edit' || mode === 'view') && !resolvedItemId) {
-          setError('未从 URL 获取到 Item ID，无法加载表单数据。');
+          setError(strings.LoadErrorNoItemIdFromUrl);
           return;
         }
 
@@ -400,7 +401,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
         setLookupOptions(lookupOptionsMap);
         setInitialValues(values);
       } catch (err: any) {
-        setError(err.message || '加载表单配置失败');
+        setError(err.message || strings.LoadConfigFailed);
       } finally {
         setLoading(false);
       }
@@ -523,7 +524,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
             setSubmitProgress((prev) => prev ? { ...prev, completed, currentFile: file.name } : prev);
           } catch (err: any) {
             console.error(`Failed to upload attachment ${fileData.name}:`, err);
-            throw new Error(`上传附件 "${fileData.name}" 失败: ${err?.message || '未知错误'}`);
+            throw new Error(Text.format(strings.UploadAttachmentFailedTemplate, fileData.name, err?.message || strings.CommonUnknownError));
           }
         }
       }
@@ -616,9 +617,9 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
     return (
       <div className={styles.designerMode}>
         <div className={styles.designerToolbar}>
-          <h2>表单设计器</h2>
+          <h2>{strings.DesignerTitle}</h2>
           <div className={styles.designerActions}>
-            <DefaultButton onClick={onToggleDesignerMode} disabled={isSaving}>返回</DefaultButton>
+            <DefaultButton onClick={onToggleDesignerMode} disabled={isSaving}>{strings.DesignerBackButton}</DefaultButton>
             {saveError && (
               <MessageBar
                 messageBarType={MessageBarType.error}
@@ -647,7 +648,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
                     // 保存后切换回表单显示模式
                     onToggleDesignerMode();
                   } catch (err: any) {
-                    setSaveError(err?.message || '保存失败，请重试');
+                    setSaveError(err?.message || strings.SaveFailedDefault);
                     console.error('Save error:', err);
                   } finally {
                     setIsSaving(false);
@@ -656,7 +657,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
               }}
               disabled={isSaving}
             >
-              {isSaving ? '保存中...' : '保存'}
+              {isSaving ? strings.CommonSaving : strings.CommonSave}
             </PrimaryButton>
           </div>
         </div>
@@ -676,7 +677,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
   if (loading) {
     return (
       <div className={styles.container}>
-        <div className={styles.loading}>加载中...</div>
+        <div className={styles.loading}>{strings.CommonLoading}</div>
       </div>
     );
   }
@@ -692,7 +693,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
   if (!schema) {
     return (
       <div className={styles.container}>
-        <MessageBar messageBarType={MessageBarType.warning}>请在 Web Part 属性中配置表单</MessageBar>
+        <MessageBar messageBarType={MessageBarType.warning}>{strings.RuntimeNoSchemaWarning}</MessageBar>
       </div>
     );
   }
@@ -707,7 +708,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
             onClick={onToggleDesignerMode}
             disabled={!listName}
           >
-            设计表单
+            {strings.DesignerButton}
           </PrimaryButton>
         </div>
       )}

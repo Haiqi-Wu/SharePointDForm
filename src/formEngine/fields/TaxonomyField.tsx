@@ -3,11 +3,13 @@
  */
 
 import * as React from 'react';
+import { Text as CoreText } from '@microsoft/sp-core-library';
 import { BaseFieldProps } from './BaseField';
 import { TaxonomyPicker } from '@pnp/spfx-controls-react/lib/TaxonomyPicker';
 import { TextField, Link, MessageBar, MessageBarType } from '@fluentui/react';
 import { SPHttpClient } from '@microsoft/sp-http';
 import './PnpControlCompat.css';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface TaxonomyFieldValue {
   Label: string;
@@ -179,7 +181,7 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
   if (!spfxContext) {
     return (
       <div style={{ color: '#d13438', padding: '8px', background: '#fde7e9', borderRadius: '4px' }}>
-        ⚠️ 缺少 SharePoint Context
+        {strings.FieldTaxonomyMissingContext}
       </div>
     );
   }
@@ -188,7 +190,7 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
   if (!termSetId) {
     return (
       <div style={{ color: '#a80000', padding: '8px', background: '#fff4ce', borderRadius: '4px' }}>
-        ⚠️ 缺少术语集 ID (TermSetId)
+        {strings.FieldTaxonomyMissingTermSetId}
       </div>
     );
   }
@@ -199,14 +201,14 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
       <div>
         <MessageBar messageBarType={MessageBarType.info}>
           <div>
-            <strong>ℹ️ Workbench 环境限制</strong><br />
-            Taxonomy 字段在本地 Workbench 中不可用，需要部署到 SharePoint 才能测试。<br />
+            <strong>{strings.FieldTaxonomyWorkbenchTitle}</strong><br />
+            {strings.FieldTaxonomyWorkbenchDesc}<br />
             <Link
               href="https://docs.microsoft.com/en-us/sharepoint/dev/spfx/web-parts/get-started/hosting-webpart-from-office-365-cdn"
               target="_blank"
               underline
             >
-              部署到 SharePoint →
+              {strings.FieldTaxonomyDeployLink}
             </Link>
           </div>
         </MessageBar>
@@ -222,8 +224,8 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
           }}
           disabled={disabled || state.readOnly || state.disabled}
           required={state.required}
-          placeholder="（仅在真实 SharePoint 环境中可用）"
-          description="此为占位符，请部署到 SharePoint 后测试完整功能"
+          placeholder={strings.FieldTaxonomyWorkbenchPlaceholder}
+          description={strings.FieldTaxonomyWorkbenchDescription}
           errorMessage={state.errors.length > 0 ? state.errors[0] : undefined}
         />
       </div>
@@ -236,7 +238,7 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
     console.error('TaxonomyField - Invalid termSetId format:', termSetId);
     return (
       <div style={{ color: '#a80000', padding: '8px', background: '#fff4ce', borderRadius: '4px' }}>
-        ⚠️ 无效的术语集 ID 格式: {termSetId}
+        {CoreText.format(strings.FieldTaxonomyInvalidTermSetId, termSetId)}
       </div>
     );
   }
@@ -252,8 +254,8 @@ export const TaxonomyField: React.FC<TaxonomyFieldProps> = ({
         allowMultipleSelections={allowMultiple}
         disabled={disabled || state.readOnly || state.disabled}
         required={state.required}
-        panelTitle={`选择${field.label}`}
-        placeholder={field.config?.placeholder || '选择术语...'}
+        panelTitle={CoreText.format(strings.FieldTaxonomyPanelTitle, field.label)}
+        placeholder={field.config?.placeholder || strings.FieldTaxonomyPlaceholder}
         hideTagsNotAvailableForTagging={false}
         hideDeprecatedTags={true}
       />

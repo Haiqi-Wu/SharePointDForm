@@ -3,10 +3,12 @@
  */
 
 import * as React from 'react';
+import { Text as CoreText } from '@microsoft/sp-core-library';
 import { FormField } from '../../formEngine/core/types';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import '../../formEngine/fields/RichTextField.css';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 const toolbarOptions = {
   container: [
@@ -55,7 +57,7 @@ export const DesignerFieldRenderer: React.FC<DesignerFieldRendererProps> = ({ fi
             'clean',
           ]}
           style={{ minHeight: '200px' }}
-          placeholder="在此输入富文本内容..."
+          placeholder={strings.DesignerRichTextPlaceholder}
         />
       </div>
     );
@@ -70,7 +72,7 @@ export const DesignerFieldRenderer: React.FC<DesignerFieldRendererProps> = ({ fi
       borderRadius: '4px',
     }}>
       <div style={{ fontSize: '12px', color: '#605e5c', marginBottom: '4px' }}>
-        {field.type} 字段
+        {CoreText.format(strings.DesignerFieldTypeLabel, field.type)}
       </div>
       <div style={{ fontSize: '14px', fontWeight: 500 }}>
         {field.label}

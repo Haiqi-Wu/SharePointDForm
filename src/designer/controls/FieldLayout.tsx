@@ -3,9 +3,11 @@
  */
 
 import * as React from 'react';
+import { Text as CoreText } from '@microsoft/sp-core-library';
  
 import { FormField } from '../../formEngine/core/types';
 import { DesignerFieldRenderer } from '../components/DesignerFieldRenderer';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 interface FieldBlockProps {
   field: FormField;
@@ -107,7 +109,7 @@ const FieldBlock: React.FC<FieldBlockProps> = ({
               background: 'white',
               border: '1px solid #e1dfdd',
               userSelect: 'none',
-            }}>富文本</div>
+            }}>{strings.DesignerRichTextChip}</div>
             <div style={{ display: 'flex', gap: '4px' }}>
               <button
                 style={{
@@ -123,7 +125,7 @@ const FieldBlock: React.FC<FieldBlockProps> = ({
                   onDelete?.(field.id);
                 }}
                 onPointerDown={(e) => e.stopPropagation()}
-                title="删除"
+                title={strings.DesignerDelete}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = '#fde7e9';
                   e.currentTarget.style.color = '#a80000';
@@ -132,7 +134,7 @@ const FieldBlock: React.FC<FieldBlockProps> = ({
                   e.currentTarget.style.background = 'white';
                   e.currentTarget.style.color = 'inherit';
                 }}
-              >🗑️ 删除</button>
+              >🗑️ {strings.DesignerDelete}</button>
             </div>
           </div>
           <DesignerFieldRenderer
@@ -174,7 +176,7 @@ const FieldBlock: React.FC<FieldBlockProps> = ({
               fontSize: '11px',
               fontWeight: 600,
             }}>
-              {columnSpan}列
+              {CoreText.format(strings.DesignerColumnBadge, String(columnSpan))}
             </div>
           )}
         </div>
@@ -192,7 +194,7 @@ const FieldBlock: React.FC<FieldBlockProps> = ({
               onSelect?.(field);
             }}
             onPointerDown={(e) => e.stopPropagation()}
-            title="编辑"
+            title={strings.DesignerEdit}
             onMouseEnter={(e) => { e.currentTarget.style.background = '#f3f2f1'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
           >✏️</button>
@@ -209,7 +211,7 @@ const FieldBlock: React.FC<FieldBlockProps> = ({
               onDelete?.(field.id);
             }}
             onPointerDown={(e) => e.stopPropagation()}
-            title="删除"
+            title={strings.DesignerDelete}
             onMouseEnter={(e) => { e.currentTarget.style.background = '#fde7e9'; e.currentTarget.style.color = '#a80000'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'inherit'; }}
           >🗑️</button>
@@ -320,7 +322,7 @@ export const FieldLayout: React.FC<FieldLayoutProps> = ({
     if (!showFieldPicker) return null;
     const selectableSpFields = spFields.filter((spField: any) => !usedFieldNames.has(spField.internalName));
     const customPickerFields = [
-      { type: 'richtext', title: '富文本编辑器', description: '用于输入说明文字、提示信息等', isCustom: true },
+      { type: 'richtext', title: strings.DesignerCustomRichTextTitle, description: strings.DesignerCustomRichTextDesc, isCustom: true },
     ];
 
     return (
@@ -352,7 +354,7 @@ export const FieldLayout: React.FC<FieldLayoutProps> = ({
             justifyContent: 'space-between',
             alignItems: 'center',
           }}>
-            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>选择要添加的字段</h3>
+            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>{strings.DesignerFieldPickerTitle}</h3>
             <button
               style={{
                 background: 'none',
@@ -371,7 +373,7 @@ export const FieldLayout: React.FC<FieldLayoutProps> = ({
             overflowY: 'auto',
             flex: 1,
           }}>
-            <div style={{ fontSize: '12px', color: '#605e5c', marginBottom: '8px' }}>自定义字段</div>
+            <div style={{ fontSize: '12px', color: '#605e5c', marginBottom: '8px' }}>{strings.DesignerCustomFields}</div>
             {customPickerFields.map((customField) => (
               <div
                 key={customField.type}
@@ -409,10 +411,10 @@ export const FieldLayout: React.FC<FieldLayoutProps> = ({
               </div>
             ))}
 
-            <div style={{ fontSize: '12px', color: '#605e5c', marginBottom: '8px' }}>SharePoint 字段</div>
+            <div style={{ fontSize: '12px', color: '#605e5c', marginBottom: '8px' }}>{strings.DesignerSPFields}</div>
             {selectableSpFields.length === 0 ? (
               <div style={{ textAlign: 'center', color: '#605e5c', padding: '12px 0' }}>
-                已没有可添加的字段
+                {strings.DesignerNoAddableFields}
               </div>
             ) : (
               selectableSpFields.map((spField: any) => (
@@ -441,7 +443,7 @@ export const FieldLayout: React.FC<FieldLayoutProps> = ({
                 >
                   <div style={{ fontWeight: 600, marginBottom: '4px' }}>{spField.title}</div>
                   <div style={{ fontSize: '12px', color: '#605e5c' }}>
-                    类型: {spField.type} | 内部名称: {spField.internalName}
+                    {CoreText.format(strings.DesignerFieldTypeAndInternal, spField.type, spField.internalName)}
                   </div>
                 </div>
               ))
@@ -506,7 +508,7 @@ export const FieldLayout: React.FC<FieldLayoutProps> = ({
           onClick={() => handleAddField(positionIndex, options)}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          title="点击添加字段"
+          title={strings.DesignerAddFieldTooltip}
         >
           +
         </button>
@@ -536,7 +538,7 @@ export const FieldLayout: React.FC<FieldLayoutProps> = ({
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          + 在此处添加字段
+          {strings.DesignerAddFieldHere}
         </button>
       </div>
     );
@@ -665,7 +667,7 @@ export const FieldLayout: React.FC<FieldLayoutProps> = ({
                 color: '#605e5c',
               }}>
                 <div style={{ fontSize: '16px' }}>
-                  点击下方按钮添加字段
+                  {strings.DesignerClickAddField}
                 </div>
                 <button
                   style={{
@@ -680,7 +682,7 @@ export const FieldLayout: React.FC<FieldLayoutProps> = ({
                   }}
                   onClick={() => handleAddField(0)}
                 >
-                  + 添加第一个字段
+                  {strings.DesignerAddFirstField}
                 </button>
               </div>
             ) : (

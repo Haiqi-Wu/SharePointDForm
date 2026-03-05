@@ -5,6 +5,7 @@
 import * as React from 'react';
 import { FormStep, FieldState, FormField } from '../core/types';
 import { FieldContainer } from './FieldContainer';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface StepRendererProps {
   step: FormStep;
@@ -46,7 +47,7 @@ export const StepRenderer: React.FC<StepRendererProps> = ({
   });
 
   if (visibleFields.length === 0) {
-    return <div className="form-step--empty">此步骤没有可显示的字段</div>;
+    return <div className="form-step--empty">{strings.StepEmptyNoVisibleFields}</div>;
   }
 
   // 判断是否使用网格布局

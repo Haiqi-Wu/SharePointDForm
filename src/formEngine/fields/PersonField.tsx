@@ -5,6 +5,7 @@
 import * as React from 'react';
 import { BaseFieldProps } from './BaseField';
 import { PeoplePicker, PrincipalType } from '@pnp/spfx-controls-react/lib/PeoplePicker';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface PersonFieldValue {
   Id?: number;
@@ -70,7 +71,7 @@ export const PersonField: React.FC<PersonFieldProps> = ({
   if (!spfxContext) {
     return (
       <div style={{ color: '#d13438', padding: '8px', background: '#fde7e9', borderRadius: '4px' }}>
-        ⚠️ 缺少 SharePoint Context
+        {strings.FieldPersonMissingContext}
       </div>
     );
   }
@@ -85,7 +86,7 @@ export const PersonField: React.FC<PersonFieldProps> = ({
       onChange={handleChange}
       defaultSelectedUsers={selectedUsers}
       key={selectedUsers.join(',') || 'empty'} // 当用户改变时强制重新渲染
-      placeholder={field.config?.placeholder || '输入姓名或邮箱搜索（至少3个字符）...'}
+      placeholder={field.config?.placeholder || strings.FieldPersonPlaceholder}
       disabled={disabled || state.readOnly || state.disabled}
       principalTypes={[PrincipalType.User]}
       ensureUser={true}

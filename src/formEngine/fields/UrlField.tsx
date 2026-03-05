@@ -5,6 +5,7 @@
 import * as React from 'react';
 import { TextField } from '@fluentui/react';
 import { BaseFieldProps } from './BaseField';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface UrlFieldValue {
   url: string;
@@ -65,8 +66,8 @@ export const UrlField: React.FC<UrlFieldProps> = ({
       <TextField
         value={description}
         onChange={handleDescriptionChange}
-        label="描述（可选）"
-        placeholder="链接显示的文本"
+        label={strings.FieldUrlDescriptionLabel}
+        placeholder={strings.FieldUrlDescriptionPlaceholder}
         disabled={disabled || state.readOnly || state.disabled}
       />
       {url && (

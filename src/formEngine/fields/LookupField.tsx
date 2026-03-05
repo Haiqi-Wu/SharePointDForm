@@ -5,6 +5,7 @@
 import * as React from 'react';
 import { Dropdown, IDropdownOption } from '@fluentui/react';
 import { BaseFieldProps } from './BaseField';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface LookupOption {
   Id: number;
@@ -45,7 +46,7 @@ export const LookupField: React.FC<BaseFieldProps & { lookupOptions: LookupOptio
         onBlur={onBlur}
         disabled={disabled || state.readOnly || state.disabled}
         required={state.required}
-        placeholder={field.config?.placeholder || '请选择'}
+        placeholder={field.config?.placeholder || strings.FieldPlaceholderSelect}
         errorMessage={state.errors.length > 0 ? state.errors[0] : undefined}
       />
     </div>

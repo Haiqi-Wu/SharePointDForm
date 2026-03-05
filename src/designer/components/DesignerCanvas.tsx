@@ -3,11 +3,13 @@
  */
 
 import * as React from 'react';
+import { Text as CoreText } from '@microsoft/sp-core-library';
 import { FormSchema, FormField, SPFieldInfo, FieldType } from '../../formEngine/core/types';
 import { FieldLayout } from '../controls/FieldLayout';
 import { PropertyPanel } from './PropertyPanel';
 import { v4 as uuidv4 } from 'uuid';
-import { TextField, PrimaryButton, Label } from '@fluentui/react';
+import { TextField, PrimaryButton } from '@fluentui/react';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface DesignerCanvasProps {
   schema: FormSchema;
@@ -28,7 +30,7 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
   if (!currentStep) {
     return (
       <div style={{ padding: '24px', textAlign: 'center', color: '#605e5c' }}>
-        未找到步骤
+        {strings.DesignerStepNotFound}
       </div>
     );
   }
@@ -95,7 +97,7 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
           step.fields.some(field => field && field.fieldName === 'Attachments')
         );
         if (hasExistingAttachment) {
-          alert('附件字段已存在');
+          alert(strings.DesignerAttachmentAlreadyExists);
           return;
         }
       }
@@ -208,7 +210,7 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
     // 新步骤使用默认布局（不继承全局或当前步骤的布局）
     const newStep = {
       id: uuidv4(),
-      title: `步骤 ${schema.steps.length + 1}`,
+      title: CoreText.format(strings.DesignerStepDefaultTitle, String(schema.steps.length + 1)),
       description: '',
       fields: [],
     };
@@ -279,7 +281,7 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
             },
           }}
         >
-          + 添加步骤
+          {strings.DesignerAddStep}
         </PrimaryButton>
         {schema.steps.length > 1 && (
           <button
@@ -300,7 +302,7 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
               e.currentTarget.style.background = 'white';
             }}
           >
-            删除步骤
+            {strings.DesignerDeleteStep}
           </button>
         )}
       </div>
@@ -320,7 +322,7 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
               newSteps[selectedStepIndex] = { ...currentStep, title: v || '' };
               onChange({ ...schema, steps: newSteps });
             }}
-            placeholder="步骤标题"
+            placeholder={strings.DesignerStepTitlePlaceholder}
             styles={{ root: { width: 300 } }}
           />
           <TextField
@@ -330,7 +332,7 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
               newSteps[selectedStepIndex] = { ...currentStep, description: v || undefined };
               onChange({ ...schema, steps: newSteps });
             }}
-            placeholder="步骤描述"
+            placeholder={strings.DesignerStepDescriptionPlaceholder}
             styles={{ root: { width: 400 } }}
           />
         </div>
@@ -353,10 +355,10 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
                 }}
                 style={{ cursor: 'pointer' }}
               />
-              <span style={{ fontSize: 14, fontWeight: 500 }}>显示此步骤</span>
+              <span style={{ fontSize: 14, fontWeight: 500 }}>{strings.DesignerShowStep}</span>
             </label>
             <p style={{ margin: '4px 0 0 24px', fontSize: '12px', color: '#605e5c' }}>
-              取消勾选后，此步骤将默认隐藏，可通过其他字段的配置来控制显示（例如：点击按钮后显示）
+              {strings.DesignerShowStepHelp}
             </p>
           </div>
         )}
@@ -371,7 +373,7 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
           alignItems: 'center',
         }}>
           <div style={{ flex: 1, maxWidth: 200 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14 }}>步骤布局</label>
+            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14 }}>{strings.DesignerStepLayout}</label>
             <select
               value={currentStep.theme?.layout || schema.theme?.layout || 'stack'}
               onChange={(e) => {
@@ -423,13 +425,13 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
                 fontSize: 14,
               }}
             >
-              <option value="stack">垂直堆叠</option>
-              <option value="grid">网格布局</option>
+              <option value="stack">{strings.DesignerLayoutStack}</option>
+              <option value="grid">{strings.DesignerLayoutGrid}</option>
             </select>
           </div>
           {(currentStep.theme?.layout || schema.theme?.layout) === 'grid' && (
             <div style={{ flex: 1, maxWidth: 200 }}>
-              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14 }}>列数</label>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14 }}>{strings.DesignerColumns}</label>
               <select
                 value={currentStep.theme?.columns || schema.theme?.columns || 1}
                 onChange={(e) => {
@@ -470,16 +472,16 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
                   fontSize: 14,
                 }}
               >
-                <option value={1}>1列</option>
-                <option value={2}>2列</option>
-                <option value={3}>3列</option>
-                <option value={4}>4列</option>
+                <option value={1}>{CoreText.format(strings.DesignerColumnOption, '1')}</option>
+                <option value={2}>{CoreText.format(strings.DesignerColumnOption, '2')}</option>
+                <option value={3}>{CoreText.format(strings.DesignerColumnOption, '3')}</option>
+                <option value={4}>{CoreText.format(strings.DesignerColumnOption, '4')}</option>
               </select>
             </div>
           )}
           {/* 标签位置配置 */}
           <div style={{ flex: 1, maxWidth: 200 }}>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14 }}>标签位置</label>
+            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600, fontSize: 14 }}>{strings.PropLabelPositionLabel}</label>
             <select
               value={currentStep.theme?.labelPosition || schema.theme?.labelPosition || 'top'}
               onChange={(e) => {
@@ -499,8 +501,8 @@ export const DesignerCanvas: React.FC<DesignerCanvasProps> = ({ schema, onChange
                 fontSize: 14,
               }}
             >
-              <option value="top">上方</option>
-              <option value="left">左侧</option>
+              <option value="top">{strings.PropLabelTop}</option>
+              <option value="left">{strings.PropLabelLeft}</option>
             </select>
           </div>
         </div>

@@ -3,7 +3,9 @@
  */
 
 import * as React from 'react';
+import { Text as CoreText } from '@microsoft/sp-core-library';
 import { SPFieldInfo, SPFieldType, FieldType } from '../../formEngine/core/types';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface FieldCardProps {
   spField: SPFieldInfo;
@@ -109,7 +111,7 @@ export const FieldCard: React.FC<FieldCardProps> = ({ spField }) => {
       <span style={{ fontSize: '18px' }}>{getFieldIcon(spField.type)}</span>
       <span style={{ flex: 1, fontSize: '14px' }}>{spField.title}</span>
       {spField.required && (
-        <span style={{ color: '#d13438', fontSize: '16px' }} title="必填">*</span>
+        <span style={{ color: '#d13438', fontSize: '16px' }} title={strings.DesignerRequiredFieldTitle}>*</span>
       )}
     </div>
   );
@@ -153,17 +155,17 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ spFields, isLoading 
 
   // 自定义字段类型
   const customFieldTypes: CustomFieldType[] = [
-    { type: 'richtext', label: '富文本编辑器', icon: '📝', description: '用于输入说明文字、提示信息等' },
+    { type: 'richtext', label: strings.DesignerCustomRichTextTitle, icon: '📝', description: strings.DesignerCustomRichTextDesc },
   ];
 
   if (isLoading) {
     return (
       <div style={fieldPaletteStyle}>
         <div style={headerStyle}>
-          <h3 style={h3Style}>列表字段</h3>
+          <h3 style={h3Style}>{strings.DesignerPaletteListFields}</h3>
         </div>
         <div style={{ padding: '24px', textAlign: 'center', color: '#605e5c' }}>
-          加载中...
+          {strings.CommonLoading}
         </div>
       </div>
     );
@@ -173,7 +175,7 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ spFields, isLoading 
     return (
       <div style={fieldPaletteStyle}>
         <div style={headerStyle}>
-          <h3 style={h3Style}>列表字段</h3>
+          <h3 style={h3Style}>{strings.DesignerPaletteListFields}</h3>
         </div>
         <div style={{ padding: '24px', textAlign: 'center', color: '#d13438', fontSize: '13px' }}>
           {error}
@@ -187,9 +189,9 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ spFields, isLoading 
       {/* 自定义字段类型 */}
       <div style={{ marginBottom: '24px' }}>
         <div style={headerStyle}>
-          <h3 style={{ ...h3Style, color: '#0078d4' }}>自定义字段</h3>
+          <h3 style={{ ...h3Style, color: '#0078d4' }}>{strings.DesignerCustomFields}</h3>
           <p style={{ ...pStyle, color: '#0078d4' }}>
-            通过右侧按钮添加字段（不保存到 SharePoint）
+            {strings.DesignerCustomFieldsDesc}
           </p>
         </div>
         <div style={fieldsContainerStyle}>
@@ -202,13 +204,13 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ spFields, isLoading 
       {/* SharePoint 列表字段 */}
       <div>
         <div style={headerStyle}>
-          <h3 style={h3Style}>SharePoint 字段</h3>
-          <p style={pStyle}>可添加字段（{fields.length}）</p>
+          <h3 style={h3Style}>{strings.DesignerSPFields}</h3>
+          <p style={pStyle}>{CoreText.format(strings.DesignerAddableFieldsCount, String(fields.length))}</p>
         </div>
         <div style={fieldsContainerStyle}>
           {fields.length === 0 ? (
             <div style={{ padding: '12px', textAlign: 'center', color: '#605e5c', fontSize: '12px' }}>
-              已没有可添加的字段
+              {strings.DesignerNoAddableFields}
             </div>
           ) : (
             fields.map(spField => (

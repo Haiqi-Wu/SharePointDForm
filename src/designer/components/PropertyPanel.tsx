@@ -10,6 +10,7 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import '../../formEngine/fields/RichTextField.css';
 import { ConditionBuilder } from './ConditionBuilder';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 const toolbarOptions = {
   container: [
@@ -58,8 +59,8 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
   const renderFooter = React.useCallback(() => (
     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-      <DefaultButton onClick={onClose}>取消</DefaultButton>
-      <PrimaryButton onClick={handleSave} disabled={!editedField}>保存</PrimaryButton>
+      <DefaultButton onClick={onClose}>{strings.CommonCancel}</DefaultButton>
+      <PrimaryButton onClick={handleSave} disabled={!editedField}>{strings.CommonSave}</PrimaryButton>
     </div>
   ), [onClose, handleSave, editedField]);
 
@@ -71,70 +72,70 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
   // 字段类型映射
   const fieldTypeLabels: Record<string, string> = {
-    'text': '单行文本',
-    'multiline': '多行文本',
-    'number': '数字',
-    'datetime': '日期时间',
-    'dropdown': '下拉选择',
-    'multiselect': '多选',
-    'lookup': '查找',
-    'person': '人员',
-    'boolean': '是/否',
-    'image': '图片',
-    'url': '超链接',
-    'taxonomy': '托管元数据',
-    'attachment': '附件',
-    'richtext': '富文本',
+    'text': strings.PropertyFieldTypeText,
+    'multiline': strings.PropertyFieldTypeMultiline,
+    'number': strings.PropertyFieldTypeNumber,
+    'datetime': strings.PropertyFieldTypeDatetime,
+    'dropdown': strings.PropertyFieldTypeDropdown,
+    'multiselect': strings.PropertyFieldTypeMultiselect,
+    'lookup': strings.PropertyFieldTypeLookup,
+    'person': strings.PropertyFieldTypePerson,
+    'boolean': strings.PropertyFieldTypeBoolean,
+    'image': strings.PropertyFieldTypeImage,
+    'url': strings.PropertyFieldTypeUrl,
+    'taxonomy': strings.PropertyFieldTypeTaxonomy,
+    'attachment': strings.PropertyFieldTypeAttachment,
+    'richtext': strings.PropertyFieldTypeRichtext,
   };
 
   return (
     <Panel
       isOpen={isOpen}
       onDismiss={onClose}
-      headerText="字段属性"
+      headerText={strings.PropertyPanelTitle}
       isFooterAtBottom={true}
       onRenderFooterContent={renderFooter}
     >
       <div style={{ padding: '16px 0' }}>
         {!editedField ? (
-          <div style={{ padding: '16px', textAlign: 'center', color: '#605e5c' }}>加载中...</div>
+          <div style={{ padding: '16px', textAlign: 'center', color: '#605e5c' }}>{strings.CommonLoading}</div>
         ) : (
           <>
             {/* 字段基本信息 - 只读显示 */}
             <div style={{ marginBottom: 20, padding: 12, background: '#f3f2f1', borderRadius: 4 }}>
-              <Label style={{ marginBottom: 8, fontWeight: 600 }}>字段信息</Label>
+              <Label style={{ marginBottom: 8, fontWeight: 600 }}>{strings.PropertyPanelFieldInfo}</Label>
               <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 16px', fontSize: 14 }}>
-                <div style={{ color: '#605e5c' }}>字段名：</div>
+                <div style={{ color: '#605e5c' }}>{strings.PropertyPanelFieldName}</div>
                 <div style={{ fontWeight: 500 }}>{editedField.label}</div>
 
-                <div style={{ color: '#605e5c' }}>字段类型：</div>
+                <div style={{ color: '#605e5c' }}>{strings.PropertyPanelFieldType}</div>
                 <div>{fieldTypeLabels[editedField.type] || editedField.type}</div>
 
-                <div style={{ color: '#605e5c' }}>内部名称：</div>
+                <div style={{ color: '#605e5c' }}>{strings.PropertyPanelFieldInternalName}</div>
                 <div style={{ fontFamily: 'monospace', fontSize: 12 }}>{editedField.fieldName}</div>
 
                 {spField && (
                   <>
-                    <div style={{ color: '#605e5c' }}>必填：</div>
-                    <div>{spField.required ? '是' : '否'}</div>
+                    <div style={{ color: '#605e5c' }}>{strings.PropertyPanelFieldRequired}</div>
+                    <div>{spField.required ? strings.FieldBooleanYes : strings.FieldBooleanNo}</div>
 
                     {spField.maxLength && (
                       <>
-                        <div style={{ color: '#605e5c' }}>最大长度：</div>
+                        <div style={{ color: '#605e5c' }}>{strings.PropertyPanelFieldMaxLength}</div>
                         <div>{spField.maxLength}</div>
                       </>
                     )}
 
                     {spField.choices && spField.choices.length > 0 && (
                       <>
-                        <div style={{ color: '#605e5c' }}>选项：</div>
+                        <div style={{ color: '#605e5c' }}>{strings.PropertyPanelFieldChoices}</div>
                         <div>{spField.choices.join(', ')}</div>
                       </>
                     )}
 
                     {spField.lookupList && (
                       <>
-                        <div style={{ color: '#605e5c' }}>查找列表：</div>
+                        <div style={{ color: '#605e5c' }}>{strings.PropertyPanelFieldLookupList}</div>
                         <div>{spField.lookupField || 'Title'}</div>
                       </>
                     )}
@@ -145,9 +146,9 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
             {/* 列跨度配置 */}
             <div style={{ marginBottom: 20 }}>
-              <Label style={{ marginBottom: 8, fontWeight: 600 }}>列跨度</Label>
+              <Label style={{ marginBottom: 8, fontWeight: 600 }}>{strings.PropertyPanelColumnSpan}</Label>
               <Text variant="small" block style={{ marginBottom: 12, color: '#605e5c' }}>
-                设置字段占据的列数。仅在网格布局下生效。
+                {strings.PropertyPanelColumnSpanDesc}
               </Text>
               <TextField
                 type="number"
@@ -164,15 +165,15 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                 styles={{ root: { marginBottom: 8 } }}
               />
               <Text variant="xSmall" block style={{ color: '#605e5c' }}>
-                例如：在3列布局中，设置为2则该字段占据2列宽度
+                {strings.PropertyPanelColumnSpanHint}
               </Text>
             </div>
 
             {/* 字段提示/说明 */}
             <div style={{ marginBottom: 20 }}>
-              <Label style={{ marginBottom: 8, fontWeight: 600 }}>字段提示</Label>
+              <Label style={{ marginBottom: 8, fontWeight: 600 }}>{strings.PropertyPanelHelpText}</Label>
               <Text variant="small" block style={{ marginBottom: 12, color: '#605e5c' }}>
-                显示在字段下方的说明文字，可用于示例或填写提示。
+                {strings.PropertyPanelHelpTextDesc}
               </Text>
               <TextField
                 multiline
@@ -186,16 +187,16 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                     },
                   });
                 }}
-                placeholder="例如：请输入完整部门名称"
+                placeholder={strings.PropertyPanelHelpTextPlaceholder}
               />
             </div>
 
             {/* 富文本内容编辑 */}
             {editedField.type === 'richtext' && (
               <div style={{ marginBottom: 20 }}>
-                <Label style={{ marginBottom: 8, fontWeight: 600 }}>富文本内容</Label>
+                <Label style={{ marginBottom: 8, fontWeight: 600 }}>{strings.PropertyPanelRichTextContent}</Label>
                 <Text variant="small" block style={{ marginBottom: 12, color: '#605e5c' }}>
-                  编辑富文本字段的内容，这些内容将在表单中显示。
+                  {strings.PropertyPanelRichTextDesc}
                 </Text>
                 <ReactQuill
                   theme="snow"
@@ -217,7 +218,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
                     'clean',
                   ]}
                   style={{ minHeight: '200px' }}
-                  placeholder="在此输入富文本内容..."
+                  placeholder={strings.DesignerRichTextPlaceholder}
                 />
               </div>
             )}
@@ -238,7 +239,7 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
 
             {!spField && (
               <div style={{ marginTop: 16, padding: '12px', background: '#fff4ce', border: '1px solid #ffb900', borderRadius: '4px', fontSize: '12px' }}>
-                ⚠️ 未找到对应的 SharePoint 字段信息，部分配置可能无法正确显示。
+                {strings.PropertyPanelMissingSPField}
               </div>
             )}
           </>

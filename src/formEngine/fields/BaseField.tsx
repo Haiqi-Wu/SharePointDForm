@@ -5,6 +5,7 @@
 import * as React from 'react';
 import { Label } from '@fluentui/react';
 import { FormField, FieldState } from '../core/types';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface BaseFieldProps {
   field: FormField;
@@ -54,7 +55,7 @@ export const BaseFieldWrapper: React.FC<BaseFieldProps & { children: React.React
                 </span>
               )}
               {(isReadOnly || isDisabled) && (
-                <span className="form-field__readonly-tag">只读</span>
+                <span className="form-field__readonly-tag">{strings.CommonReadOnly}</span>
               )}
             </Label>
           </div>
@@ -95,7 +96,7 @@ export const BaseFieldWrapper: React.FC<BaseFieldProps & { children: React.React
             </span>
           )}
           {(isReadOnly || isDisabled) && (
-            <span className="form-field__readonly-tag">只读</span>
+            <span className="form-field__readonly-tag">{strings.CommonReadOnly}</span>
           )}
         </Label>
       )}

@@ -7,6 +7,7 @@ import { FormSchema, FormField, SPFieldInfo } from '../../formEngine/core/types'
 import { FieldPalette } from '../controls/FieldPalette';
 import { DesignerCanvas } from './DesignerCanvas';
 import { SharePointDataSource } from '../../formEngine/data/SharePointDataSource';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface FormDesignerProps {
   schema: FormSchema;
@@ -52,10 +53,10 @@ export const FormDesigner: React.FC<FormDesignerProps> = ({ schema, onChange, co
           setSpFields(fields);
         } catch (error: any) {
           console.error('Error loading fields:', error);
-          setFieldsError(error?.message || '加载字段失败');
+          setFieldsError(error?.message || strings.DesignerLoadFieldsFailed);
         }
       } else if (!listName) {
-        setFieldsError('未选择列表');
+        setFieldsError(strings.DesignerNoListSelected);
       }
       setIsLoadingFields(false);
     };

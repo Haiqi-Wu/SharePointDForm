@@ -12,6 +12,7 @@ import { spfi, SPFx } from '@pnp/sp';
 import '@pnp/sp/webs';
 import '@pnp/sp/files';
 import '@pnp/sp/folders';
+import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface ImageFieldValue {
   serverRelativeUrl?: string;
@@ -80,7 +81,7 @@ export const ImageField: React.FC<ImageFieldProps> = ({
       // If file is from local (needs upload)
       const fileContent = await file.downloadFileContent();
       if (!fileContent) {
-        setError('无法读取文件内容');
+        setError(strings.FieldImageReadFileFailed);
         return;
       }
 
@@ -116,7 +117,7 @@ export const ImageField: React.FC<ImageFieldProps> = ({
       });
     } catch (err: any) {
       console.error('Image upload failed:', err);
-      setError(err?.message || '上传图片失败');
+      setError(err?.message || strings.FieldImageUploadFailed);
     }
   };
 
@@ -142,7 +143,7 @@ export const ImageField: React.FC<ImageFieldProps> = ({
             }}
           />
         ) : (
-          <span style={{ color: '#666' }}>无图片</span>
+          <span style={{ color: '#666' }}>{strings.FieldImageNoImage}</span>
         )}
         {state.errors.length > 0 && (
           <div style={{ color: '#a80000', fontSize: 12, marginTop: 4 }}>
@@ -164,7 +165,7 @@ export const ImageField: React.FC<ImageFieldProps> = ({
           textAlign: 'center',
           backgroundColor: '#f8f8f8',
         }}>
-          <span style={{ color: '#666' }}>图片选择器在运行模式下可用</span>
+          <span style={{ color: '#666' }}>{strings.FieldImageRuntimeOnly}</span>
         </div>
         {state.errors.length > 0 && (
           <div style={{ color: '#a80000', fontSize: 12, marginTop: 4 }}>
