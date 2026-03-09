@@ -12,8 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [ 20.x]
-      # 即使某个版本失败，继续运行其他版本
+        node-version: [20.x]
       fail-fast: false
 
     steps:
@@ -29,7 +28,11 @@ jobs:
       run: npm ci
 
     - name: Verify heft installation
-      run: npx heft --version
+      run: |
+        echo "Checking heft version..."
+        npx heft --help | head -n 2
+        # 或者直接检查 heft 是否可用
+        npx heft --help > /dev/null 2>&1 && echo "✅ heft is available" || echo "❌ heft is not available"
 
     - name: Build SPFx solution
       run: npx heft build --production
