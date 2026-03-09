@@ -1,4 +1,4 @@
-name: NodeJS with Webpack
+name: SPFx Build and Package
 
 on:
   push:
@@ -12,7 +12,9 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.x]
+        node-version: [18.x, 20.x, 22.x]
+      # 即使某个版本失败，继续运行其他版本
+      fail-fast: false
 
     steps:
     - uses: actions/checkout@v4
@@ -21,9 +23,22 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
+        cache: 'npm'
 
-    - name: Build
-      run: |
-        npm install
-        heft build --production
-        heft package-solution --production
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Verify heft installation
+      run: npx heft --version
+
+    - name: Build SPFx solution
+      run: npx heft build --production
+
+    - name: Package SPFx solution
+      run: npx heft package-solution --production
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: spfx-package-node-${{ matrix.node-version }}
+        path: sharepoint/solution/*.sppkg
