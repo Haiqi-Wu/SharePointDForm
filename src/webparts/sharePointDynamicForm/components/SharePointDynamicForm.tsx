@@ -534,8 +534,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
   };
 
   const handleSubmit = async (values: Record<string, any>): Promise<void> => {
-    try {
-      if (!schema) return;
+    if (!schema) return;
 
       // 收集附件字段（稍后处理）
       const attachmentFields: Array<{ field: any; files: any[] }> = [];
@@ -606,10 +605,6 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
       if (attachmentFields.length > 0 && context && createdItemId) {
         await uploadAttachments(targetList, createdItemId, attachmentFields);
       }
-
-    } catch (err: any) {
-      throw err;
-    }
   };
 
   // 设计模式：显示设计器

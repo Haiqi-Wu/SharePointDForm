@@ -1,0 +1,47 @@
+name: SPFx Build and Package
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [22.x]
+      fail-fast: false
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Verify heft installation
+      run: |
+        echo "Checking heft version..."
+        npx heft --help | head -n 2
+        # 或者直接检查 heft 是否可用
+        npx heft --help > /dev/null 2>&1 && echo "✅ heft is available" || echo "❌ heft is not available"
+
+    - name: Build SPFx solution
+      run: npx heft build --production
+
+    - name: Package SPFx solution
+      run: npx heft package-solution --production
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: spfx-package-node-${{ matrix.node-version }}
+        path: sharepoint/solution/*.sppkg

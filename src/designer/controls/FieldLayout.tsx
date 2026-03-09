@@ -59,14 +59,6 @@ const FieldBlock: React.FC<FieldBlockProps> = ({
 }) => {
   const [isHovered, setIsHovered] = React.useState(false);
 
-  // 调试：检查字段数据
-  React.useEffect(() => {
-    if (typeof field.label !== 'string') {
-    }
-    if (field.config && typeof field.config !== 'object') {
-    }
-  }, [field]);
-
   const style = {
     ...(isHovered ? fieldBlockHoverStyle : fieldBlockStyle),
   };
@@ -574,7 +566,6 @@ export const FieldLayout: React.FC<FieldLayoutProps> = ({
 
     // 添加了字段后，上下各增加一行按钮（初始化无字段不显示）
     const extraRows = lastFilledIndex >= 0 ? 2 : 0;
-    const totalPositions = basePositions + extraRows * columns;
     const positions: GridPosition[] = [];
 
     // 顶部额外一行按钮
