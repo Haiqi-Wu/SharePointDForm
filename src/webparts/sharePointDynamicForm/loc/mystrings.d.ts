@@ -4,6 +4,7 @@ declare interface ISharePointDynamicFormWebPartStrings {
   DescriptionFieldLabel: string;
   PropertyGroupBasic: string;
   PropertyGroupButtons: string;
+  PropertyGroupConfigIO: string;
   PropListLabel: string;
   PropModeLabel: string;
   PropModeNew: string;
@@ -27,6 +28,12 @@ declare interface ISharePointDynamicFormWebPartStrings {
   PropSubmitRedirectUrlPlaceholder: string;
   PropSubmitSuccessMessageLabel: string;
   PropSubmitSuccessMessagePlaceholder: string;
+  ConfigExportButton: string;
+  ConfigImportButton: string;
+  ConfigImportSuccess: string;
+  ConfigImportInvalid: string;
+  ConfigImportReadError: string;
+  ConfigImportWarningList: string;
   DesignerTitle: string;
   DesignerButton: string;
   DesignerBackButton: string;

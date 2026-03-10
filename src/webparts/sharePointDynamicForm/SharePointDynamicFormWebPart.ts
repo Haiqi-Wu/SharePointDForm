@@ -14,6 +14,8 @@ import * as strings from 'SharePointDynamicFormWebPartStrings';
 import { SharePointDataSource } from '../../formEngine/data/SharePointDataSource';
 import { FormSchema, FormMode } from '../../formEngine/core/types';
 import { SharePointDynamicFormContainer } from './components/SharePointDynamicForm';
+import { PropertyPaneConfigIO } from './propertyPane/PropertyPaneConfigIO';
+import { buildConfigExport, parseConfigExport } from './utils/configIO';
 
 export interface ISharePointDynamicFormWebPartProps {
   formSchemaJson: string;
@@ -161,6 +163,50 @@ export default class SharePointDynamicFormWebPart extends BaseClientSideWebPart<
     this.context.propertyPane.refresh();
   }
 
+  private exportConfigJson(): string {
+    return JSON.stringify(buildConfigExport(this.properties), null, 2);
+  }
+
+  private async importConfigJson(json: string): Promise<{ ok: boolean; level?: 'success' | 'warning' | 'error'; message?: string }> {
+    const parsed = parseConfigExport(json);
+    if (!parsed.ok) {
+      return { ok: false, level: 'error', message: strings.ConfigImportInvalid };
+    }
+
+    const imported = parsed.value || {};
+    const nextProps: ISharePointDynamicFormWebPartProps = {
+      formSchemaJson: imported.formSchemaJson ?? '',
+      listName: imported.listName ?? '',
+      mode: (imported.mode as FormMode) ?? 'new',
+      useItemId: imported.useItemId ?? false,
+      itemId: imported.itemId ?? 0,
+      itemIdQueryParam: imported.itemIdQueryParam ?? 'ID',
+      isInDesignerMode: imported.isInDesignerMode ?? false,
+      labelPosition: imported.labelPosition ?? 'top',
+      showFieldDescription: imported.showFieldDescription ?? false,
+      submitButtonLabel: imported.submitButtonLabel,
+      showCancelButton: imported.showCancelButton ?? false,
+      cancelButtonLabel: imported.cancelButtonLabel,
+      cancelRedirectUrl: imported.cancelRedirectUrl,
+      submitRedirectUrl: imported.submitRedirectUrl,
+      onSubmitMessage: imported.onSubmitMessage,
+    };
+
+    this.properties = nextProps;
+    this._isInDesignerMode = nextProps.isInDesignerMode ?? false;
+    this.context.propertyPane.refresh();
+    this.render();
+
+    if (nextProps.listName && this._lists.length > 0) {
+      const hasList = this._lists.some((list) => list.key === nextProps.listName);
+      if (!hasList) {
+        return { ok: true, level: 'warning', message: strings.ConfigImportWarningList };
+      }
+    }
+
+    return { ok: true, level: 'success', message: strings.ConfigImportSuccess };
+  }
+
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
     return {
       pages: [
@@ -242,6 +288,23 @@ export default class SharePointDynamicFormWebPart extends BaseClientSideWebPart<
                   multiline: true,
                   resizable: true,
                   rows: 2,
+                }),
+              ]
+            },
+            {
+              groupName: strings.PropertyGroupConfigIO,
+              groupFields: [
+                PropertyPaneConfigIO('configIO', {
+                  exportConfig: () => this.exportConfigJson(),
+                  importConfig: (json) => this.importConfigJson(json),
+                  strings: {
+                    exportLabel: strings.ConfigExportButton,
+                    importLabel: strings.ConfigImportButton,
+                    importSuccess: strings.ConfigImportSuccess,
+                    importInvalid: strings.ConfigImportInvalid,
+                    importReadError: strings.ConfigImportReadError,
+                    importWarningList: strings.ConfigImportWarningList,
+                  },
                 }),
               ]
             },
