@@ -10,7 +10,8 @@
     "start": "heft start --clean",
     "clean": "heft clean",
     "eject-webpack": "heft eject-webpack",
-    "test:config-io": "ts-node --project scripts/tsconfig.test.json scripts/config-io.test.ts"
+    "test:config-io": "ts-node --project scripts/tsconfig.test.json scripts/config-io.test.ts",
+    "test:gh-pages": "node scripts/gh-pages-smoke.test.js"
   },
   "dependencies": {
     "@fluentui/react": "^8.106.4",
