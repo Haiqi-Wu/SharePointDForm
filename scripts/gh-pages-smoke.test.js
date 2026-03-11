@@ -30,4 +30,9 @@ for (const cls of bilingualMarkers) {
   assert.ok(html.includes(cls), `Missing bilingual class: ${cls}`);
 }
 
+assert.ok(
+  !html.includes("REPO_PLACEHOLDER"),
+  "Replace REPO_PLACEHOLDER with the real GitHub URL"
+);
+
 console.log("gh-pages smoke test: PASS");
