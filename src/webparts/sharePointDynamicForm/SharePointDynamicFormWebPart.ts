@@ -192,7 +192,21 @@ export default class SharePointDynamicFormWebPart extends BaseClientSideWebPart<
       onSubmitMessage: imported.onSubmitMessage,
     };
 
-    this.properties = nextProps;
+    this.properties.formSchemaJson = nextProps.formSchemaJson;
+    this.properties.listName = nextProps.listName;
+    this.properties.mode = nextProps.mode;
+    this.properties.useItemId = nextProps.useItemId;
+    this.properties.itemId = nextProps.itemId;
+    this.properties.itemIdQueryParam = nextProps.itemIdQueryParam;
+    this.properties.isInDesignerMode = nextProps.isInDesignerMode;
+    this.properties.labelPosition = nextProps.labelPosition;
+    this.properties.showFieldDescription = nextProps.showFieldDescription;
+    this.properties.submitButtonLabel = nextProps.submitButtonLabel;
+    this.properties.showCancelButton = nextProps.showCancelButton;
+    this.properties.cancelButtonLabel = nextProps.cancelButtonLabel;
+    this.properties.cancelRedirectUrl = nextProps.cancelRedirectUrl;
+    this.properties.submitRedirectUrl = nextProps.submitRedirectUrl;
+    this.properties.onSubmitMessage = nextProps.onSubmitMessage;
     this._isInDesignerMode = nextProps.isInDesignerMode ?? false;
     this.context.propertyPane.refresh();
     this.render();
