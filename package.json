@@ -9,7 +9,8 @@
     "build": "heft test --clean --production && heft package-solution --production",
     "start": "heft start --clean",
     "clean": "heft clean",
-    "eject-webpack": "heft eject-webpack"
+    "eject-webpack": "heft eject-webpack",
+    "test:config-io": "ts-node --project scripts/tsconfig.test.json scripts/config-io.test.ts"
   },
   "dependencies": {
     "@fluentui/react": "^8.106.4",
@@ -48,6 +49,7 @@
     "eslint": "8.57.1",
     "eslint-plugin-react-hooks": "4.3.0",
     "sass-embedded": "^1.97.3",
+    "ts-node": "^10.9.2",
     "typescript": "~5.8.0"
   },
   "optionalDependencies": {
