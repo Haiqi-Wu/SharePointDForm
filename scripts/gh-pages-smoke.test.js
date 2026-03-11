@@ -14,4 +14,15 @@ for (const id of requiredIds) {
   assert.ok(html.includes(`id=\"${id}\"`), `Missing section id: ${id}`);
 }
 
+const cssPath = path.join(root, "docs", "assets", "styles.css");
+const heroPath = path.join(root, "docs", "assets", "hero-placeholder.svg");
+
+assert.ok(fs.existsSync(cssPath), "docs/assets/styles.css must exist");
+assert.ok(fs.existsSync(heroPath), "docs/assets/hero-placeholder.svg must exist");
+
+assert.ok(
+  html.includes("assets/styles.css"),
+  "index.html must link assets/styles.css"
+);
+
 console.log("gh-pages smoke test: PASS");
