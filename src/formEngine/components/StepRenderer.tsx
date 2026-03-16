@@ -52,6 +52,7 @@ export const StepRenderer: React.FC<StepRendererProps> = ({
 
   // 判断是否使用网格布局
   const useGridLayout = layout === 'grid' && columns > 1;
+  const effectiveColumns = useGridLayout ? (isNarrow ? 1 : columns) : columns;
 
   // 计算每个字段的网格样式
   const getFieldStyle = (field: FormField): React.CSSProperties => {
@@ -70,14 +71,15 @@ export const StepRenderer: React.FC<StepRendererProps> = ({
     }
 
     return {
-      gridColumn: `span ${Math.min(columnSpan, columns)}`,
+      gridColumn: `span ${Math.min(columnSpan, effectiveColumns || 1)}`,
       width,
       minWidth,
     };
   };
 
-  const usePlaceholders = useGridLayout && step.fields.some(f => f === null);
-  const effectiveColumns = useGridLayout ? (isNarrow ? 1 : columns) : columns;
+  // When collapsing to 1 column (narrow screens), placeholders create large gaps and
+  // grid spans can imply implicit columns; render only visible fields instead.
+  const usePlaceholders = useGridLayout && effectiveColumns > 1 && step.fields.some(f => f === null);
   const gridStyle: React.CSSProperties = useGridLayout ? {
     display: 'grid',
     gridTemplateColumns: `repeat(${effectiveColumns}, minmax(0, 1fr))`,

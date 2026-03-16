@@ -125,10 +125,13 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
 
   // 清理 schema 数据，确保字段属性正确
   const sanitizeSchema = React.useCallback((schema: FormSchema): FormSchema => {
-    const useGridLayout = schema.theme?.layout === 'grid' && (schema.theme?.columns || 0) > 1;
     return {
       ...schema,
       steps: schema.steps.map(step => {
+        const stepLayout = step.theme?.layout ?? schema.theme?.layout;
+        const stepColumns = step.theme?.columns ?? schema.theme?.columns ?? 1;
+        const useGridLayout = stepLayout === 'grid' && stepColumns > 1;
+
         const mapped = step.fields.map(field => {
           if (!field || field.type === 'newline') return null;
           const sanitized: typeof field = {
@@ -170,10 +173,13 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
   }, []);
 
   const prepareSchemaForSave = React.useCallback((schema: FormSchema): FormSchema => {
-    const useGridLayout = schema.theme?.layout === 'grid' && (schema.theme?.columns || 0) > 1;
     return {
       ...schema,
       steps: schema.steps.map(step => {
+        const stepLayout = step.theme?.layout ?? schema.theme?.layout;
+        const stepColumns = step.theme?.columns ?? schema.theme?.columns ?? 1;
+        const useGridLayout = stepLayout === 'grid' && stepColumns > 1;
+
         const mapped = step.fields.map(field => {
           if (!field || field.type === 'newline') return null;
           // 确保关键字段属性被保留
