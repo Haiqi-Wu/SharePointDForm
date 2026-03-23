@@ -85,6 +85,7 @@ declare interface ISharePointDynamicFormWebPartStrings {
   FieldAttachmentLoadingList: string;
   FieldAttachmentNeedListInfo: string;
   FieldAttachmentUploadOnSubmit: string;
+  FieldAttachmentAddButton: string;
   FieldAttachmentClear: string;
   FieldAttachmentRemoveAria: string;
   FieldAttachmentEmpty: string;

@@ -103,6 +103,7 @@ export interface FieldConfig {
   listName?: string;
   listId?: string;
   itemId?: number;
+  accepts?: string;
 }
 
 export type FieldAction =

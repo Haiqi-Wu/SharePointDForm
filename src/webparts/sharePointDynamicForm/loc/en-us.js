@@ -86,6 +86,7 @@ define([], function() {
     "FieldAttachmentLoadingList": "Loading list information...",
     "FieldAttachmentNeedListInfo": "Please configure list name or list ID (GUID) to enable attachments.",
     "FieldAttachmentUploadOnSubmit": "Attachments will be uploaded on submit.",
+    "FieldAttachmentAddButton": "Add attachment",
     "FieldAttachmentClear": "Clear",
     "FieldAttachmentRemoveAria": "Remove attachment",
     "FieldAttachmentEmpty": "No attachments selected",

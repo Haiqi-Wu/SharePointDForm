@@ -86,6 +86,7 @@ define([], function() {
     "FieldAttachmentLoadingList": "正在加载列表信息...",
     "FieldAttachmentNeedListInfo": "请在表单配置中指定列表名称或列表 ID（GUID）以启用附件功能。",
     "FieldAttachmentUploadOnSubmit": "附件将在提交时统一上传。",
+    "FieldAttachmentAddButton": "添加附件",
     "FieldAttachmentClear": "清空",
     "FieldAttachmentRemoveAria": "移除附件",
     "FieldAttachmentEmpty": "尚未选择附件",
