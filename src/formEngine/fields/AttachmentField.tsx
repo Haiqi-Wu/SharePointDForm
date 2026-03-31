@@ -1,13 +1,12 @@
 /**
- * Attachment Field - Using PnP controls (FilePicker for new, ListItemAttachments for edit)
+ * Attachment Field - Using PnP ListItemAttachments control
  */
 
 import * as React from 'react';
 import { Text as CoreText } from '@microsoft/sp-core-library';
 import { BaseFieldProps } from './BaseField';
 import { ListItemAttachments } from '@pnp/spfx-controls-react/lib/ListItemAttachments';
-import { FilePicker, IFilePickerResult } from '@pnp/spfx-controls-react/lib/FilePicker';
-import { MessageBar, MessageBarType, IconButton, Text, Label, DocumentCard, DocumentCardDetails, DocumentCardTitle } from '@fluentui/react';
+import { MessageBar, MessageBarType, DefaultButton, IconButton, Text } from '@fluentui/react';
 import { spfi, SPFI } from '@pnp/sp';
 import { SPFx as spSPFx } from '@pnp/sp/presets/all';
 import '@pnp/sp/lists/web';
@@ -16,7 +15,7 @@ import './PnpControlCompat.css';
 import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface AttachmentFieldValue {
-  files?: Array<{ file?: File; name: string }>;
+  // Value is managed by the ListItemAttachments component
 }
 
 export interface AttachmentFieldProps extends BaseFieldProps {
@@ -121,65 +120,52 @@ export const AttachmentField: React.FC<AttachmentFieldProps> = ({
     );
   }
 
-  const handleFilePickerChange = async (files: IFilePickerResult[]) => {
-    const filePromises = files.map(async (fp) => {
-      const file = await fp.downloadFileContent();
-      return file;
-    });
-    const resolvedFiles = (await Promise.all(filePromises)).filter(Boolean);
-    setSelectedFiles(resolvedFiles);
+  const updateSelectedFiles = (files: File[]) => {
+    setSelectedFiles(files);
     onChange({
-      files: resolvedFiles.map((file) => ({ file, name: file.name })),
+      files: files.map((file) => ({ file, name: file.name })),
     });
   };
 
-  const removeFile = (index: number) => {
-    const next = selectedFiles.filter((_, i) => i !== index);
-    setSelectedFiles(next);
-    onChange({
-      files: next.map((file) => ({ file, name: file.name })),
-    });
-  };
-
-  // 新建项：使用 PnP FilePicker
+  // 新建项：使用本地文件选择，提交时统一上传
   if (isNewItem) {
     return (
       <div className="spdf-attachments spdf-attachments--new">
-        <Label required={state.required}>{field.label}</Label>
         <MessageBar messageBarType={MessageBarType.info}>
           {strings.FieldAttachmentUploadOnSubmit}
         </MessageBar>
         <div className="spdf-attachments__picker">
-          <FilePicker
-            context={spfxContext}
-            accepts={field.config?.accepts ? field.config.accepts.split(',') : ['.*']}
-            buttonLabel={strings.FieldAttachmentAddButton}
-            buttonIcon="Attach"
-            onSave={handleFilePickerChange}
+          <input
+            type="file"
+            multiple
             disabled={isReadOnly}
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              updateSelectedFiles(files);
+            }}
           />
+          {!isReadOnly && selectedFiles.length > 0 && (
+            <DefaultButton onClick={() => updateSelectedFiles([])}>{strings.FieldAttachmentClear}</DefaultButton>
+          )}
         </div>
         {selectedFiles.length > 0 && (
-          <div className="spdf-attachments__list">
+          <ul className="spdf-attachments__list">
             {selectedFiles.map((file, index) => (
-              <DocumentCard key={`${file.name}-${index}`} className="spdf-attachments__card">
-                <DocumentCardDetails>
-                  <DocumentCardTitle
-                    title={file.name}
-                    shouldTruncate
-                  />
-                </DocumentCardDetails>
+              <li key={`${file.name}-${index}`} className="spdf-attachments__item">
+                <span className="spdf-attachments__file">{file.name}</span>
                 {!isReadOnly && (
                   <IconButton
                     iconProps={{ iconName: 'Cancel' }}
                     ariaLabel={strings.FieldAttachmentRemoveAria}
-                    onClick={() => removeFile(index)}
-                    styles={{ root: { position: 'absolute', top: 4, right: 4 } }}
+                    onClick={() => {
+                      const next = selectedFiles.filter((_, i) => i !== index);
+                      updateSelectedFiles(next);
+                    }}
                   />
                 )}
-              </DocumentCard>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
         {selectedFiles.length === 0 && (
           <Text variant="small" className="spdf-attachments__empty">{strings.FieldAttachmentEmpty}</Text>
@@ -188,7 +174,7 @@ export const AttachmentField: React.FC<AttachmentFieldProps> = ({
     );
   }
 
-  // 编辑项：使用 PnP ListItemAttachments
+  // 编辑项：使用 ListItemAttachments
   if (listId) {
     return (
       <div className="spdf-attachments spdf-attachments--edit">
