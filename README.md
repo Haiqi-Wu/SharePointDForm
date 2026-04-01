@@ -170,25 +170,35 @@ Export and import form configurations as JSON for:
 ```
 src/
 ├── designer/                    # Form Designer Module
+│   ├── index.ts                     # Module entry
 │   ├── components/
 │   │   ├── FormDesigner.tsx         # Main designer component
-│   │   └── DesignerCanvas.tsx       # Drag-drop canvas
+│   │   ├── DesignerCanvas.tsx       # Drag-drop canvas
+│   │   ├── DesignerFieldRenderer.tsx # Field rendering in designer
+│   │   ├── PropertyPanel.tsx        # Field property editor
+│   │   └── ConditionBuilder.tsx     # Conditional logic builder
 │   └── controls/
-│       └── FieldPalette.tsx         # Available fields panel
+│       ├── FieldPalette.tsx         # Available fields panel
+│       └── FieldLayout.tsx          # Field layout controls
 │
 ├── formEngine/                  # Form Engine Core
+│   ├── index.ts                     # Module entry
 │   ├── core/
 │   │   ├── types.ts                 # TypeScript type definitions
 │   │   ├── FormStateManager.ts      # State management
 │   │   └── ValidationEngine.ts      # Field validation
 │   ├── components/
 │   │   ├── FormRenderer.tsx         # Main form renderer
+│   │   ├── FormRenderer.module.scss # Form renderer styles
+│   │   ├── FieldContainer.tsx       # Field wrapper container
 │   │   ├── StepRenderer.tsx         # Step container
 │   │   └── FormStepper.tsx          # Navigation stepper
 │   ├── fields/                      # Field Components (15+ types)
+│   │   ├── index.tsx                # Field registry
+│   │   ├── BaseField.tsx            # Base field component
 │   │   ├── TextField.tsx
 │   │   ├── MultilineField.tsx
-│   │   ├── RichTextField.tsx
+│   │   ├── RichTextField.tsx        # Rich text (Quill editor)
 │   │   ├── NumberField.tsx
 │   │   ├── DateTimeField.tsx
 │   │   ├── DropdownField.tsx
@@ -200,15 +210,39 @@ src/
 │   │   ├── ImageField.tsx
 │   │   ├── TaxonomyField.tsx
 │   │   ├── AttachmentField.tsx
-│   │   └── NewLineField.tsx
-│   ├── hooks/                       # Custom React Hooks
+│   │   ├── NewLineField.tsx
+│   │   ├── PnpControlCompat.css     # PnP controls style patch
+│   │   ├── RichTextField.css        # Rich text editor styles
+│   │   └── AttachmentField.css      # Attachment field styles
+│   ├── hooks/
+│   │   └── useDebounce.ts           # Debounce hook
+│   ├── utils/
+│   │   └── odata/                   # OData expression engine
+│   │       ├── ODataLexer.ts        # OData tokenizer
+│   │       ├── ODataParser.ts       # OData parser
+│   │       ├── ODataEvaluator.ts    # OData expression evaluator
+│   │       └── index.ts
 │   └── data/
 │       └── SharePointDataSource.ts  # SharePoint API layer
 │
+├── templates/                   # Form Templates
+│   ├── index.ts
+│   └── formTemplates.ts             # Predefined form templates
+│
 └── webparts/sharePointDynamicForm/  # SPFx Web Part
-    ├── SharePointDynamicFormWebPart.ts   # Entry point
-    ├── propertyPane/                     # Property pane config
-    └── loc/                              # Localization (en-us, zh-cn)
+    ├── SharePointDynamicFormWebPart.ts       # Entry point
+    ├── SharePointDynamicFormWebPart.manifest.json
+    ├── components/
+    │   ├── SharePointDynamicForm.tsx         # Main component
+    │   ├── ISharePointDynamicFormProps.ts    # Props interface
+    │   └── SharePointDynamicForm.module.scss # Component styles
+    ├── propertyPane/
+    │   ├── PropertyPaneConfigIO.ts           # Config import/export pane
+    │   └── ConfigIOControl.tsx               # Config IO React control
+    ├── utils/
+    │   └── configIO.ts                       # Config read/write utilities
+    ├── assets/                                # Web part icons
+    └── loc/                                   # Localization (en-us, zh-cn)
 ```
 
 ---
@@ -297,7 +331,8 @@ The form engine includes a `ValidationEngine` that supports:
 | UI Library | Fluent UI React 8.x |
 | SharePoint | PnP.js 4.x |
 | Controls | @pnp/spfx-controls-react |
-| Editor | React Quill |
+| Rich Editor | React Quill |
+| Date Utils | date-fns |
 | Build | Heft, Webpack 5 |
 | Language | TypeScript 5.8 |
 
@@ -311,8 +346,7 @@ Contributions are welcome! Please read the contributing guidelines before submit
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) for details.
-
+MIT License
 ---
 
 <p align="center">

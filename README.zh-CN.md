@@ -170,25 +170,35 @@ npm run build
 ```
 src/
 ├── designer/                    # 表单设计器模块
+│   ├── index.ts                     # 模块入口
 │   ├── components/
 │   │   ├── FormDesigner.tsx         # 设计器主组件
-│   │   └── DesignerCanvas.tsx       # 拖拽画布
+│   │   ├── DesignerCanvas.tsx       # 拖拽画布
+│   │   ├── DesignerFieldRenderer.tsx # 设计器字段渲染
+│   │   ├── PropertyPanel.tsx        # 字段属性编辑器
+│   │   └── ConditionBuilder.tsx     # 条件逻辑构建器
 │   └── controls/
-│       └── FieldPalette.tsx         # 可用字段面板
+│       ├── FieldPalette.tsx         # 可用字段面板
+│       └── FieldLayout.tsx          # 字段布局控件
 │
 ├── formEngine/                  # 表单引擎核心
+│   ├── index.ts                     # 模块入口
 │   ├── core/
 │   │   ├── types.ts                 # TypeScript 类型定义
 │   │   ├── FormStateManager.ts      # 状态管理
 │   │   └── ValidationEngine.ts      # 字段验证
 │   ├── components/
 │   │   ├── FormRenderer.tsx         # 表单渲染器
+│   │   ├── FormRenderer.module.scss # 渲染器样式
+│   │   ├── FieldContainer.tsx       # 字段包装容器
 │   │   ├── StepRenderer.tsx         # 步骤容器
 │   │   └── FormStepper.tsx          # 导航步进器
 │   ├── fields/                      # 字段组件（15+ 种类型）
+│   │   ├── index.tsx                # 字段注册表
+│   │   ├── BaseField.tsx            # 基础字段组件
 │   │   ├── TextField.tsx
 │   │   ├── MultilineField.tsx
-│   │   ├── RichTextField.tsx
+│   │   ├── RichTextField.tsx        # 富文本（Quill 编辑器）
 │   │   ├── NumberField.tsx
 │   │   ├── DateTimeField.tsx
 │   │   ├── DropdownField.tsx
@@ -200,15 +210,39 @@ src/
 │   │   ├── ImageField.tsx
 │   │   ├── TaxonomyField.tsx
 │   │   ├── AttachmentField.tsx
-│   │   └── NewLineField.tsx
-│   ├── hooks/                       # 自定义 React Hooks
+│   │   ├── NewLineField.tsx
+│   │   ├── PnpControlCompat.css     # PnP 控件样式补丁
+│   │   ├── RichTextField.css        # 富文本编辑器样式
+│   │   └── AttachmentField.css      # 附件字段样式
+│   ├── hooks/
+│   │   └── useDebounce.ts           # 防抖 Hook
+│   ├── utils/
+│   │   └── odata/                   # OData 表达式引擎
+│   │       ├── ODataLexer.ts        # OData 词法分析
+│   │       ├── ODataParser.ts       # OData 语法解析
+│   │       ├── ODataEvaluator.ts    # OData 表达式求值
+│   │       └── index.ts
 │   └── data/
 │       └── SharePointDataSource.ts  # SharePoint API 层
 │
+├── templates/                   # 表单模板
+│   ├── index.ts
+│   └── formTemplates.ts             # 预定义表单模板
+│
 └── webparts/sharePointDynamicForm/  # SPFx Web Part
-    ├── SharePointDynamicFormWebPart.ts   # 入口文件
-    ├── propertyPane/                     # 属性面板配置
-    └── loc/                              # 本地化（英文、中文）
+    ├── SharePointDynamicFormWebPart.ts       # 入口文件
+    ├── SharePointDynamicFormWebPart.manifest.json
+    ├── components/
+    │   ├── SharePointDynamicForm.tsx         # 主组件
+    │   ├── ISharePointDynamicFormProps.ts    # Props 接口
+    │   └── SharePointDynamicForm.module.scss # 组件样式
+    ├── propertyPane/
+    │   ├── PropertyPaneConfigIO.ts           # 配置导入导出面板
+    │   └── ConfigIOControl.tsx               # 配置 IO React 控件
+    ├── utils/
+    │   └── configIO.ts                       # 配置读写工具
+    ├── assets/                                # Web Part 图标
+    └── loc/                                   # 本地化（英文、中文）
 ```
 
 ---
@@ -297,7 +331,8 @@ src/
 | UI 库 | Fluent UI React 8.x |
 | SharePoint | PnP.js 4.x |
 | 控件 | @pnp/spfx-controls-react |
-| 编辑器 | React Quill |
+| 富文本 | React Quill |
+| 日期工具 | date-fns |
 | 构建 | Heft, Webpack 5 |
 | 语言 | TypeScript 5.8 |
 
@@ -311,7 +346,7 @@ src/
 
 ## 许可证
 
-MIT 许可证 - 详见 [LICENSE](LICENSE)。
+MIT 许可证
 
 ---
 
