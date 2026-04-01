@@ -17,7 +17,6 @@ import {
   Dialog,
   DialogType,
   DialogFooter,
-  ProgressIndicator,
   Link,
 } from '@fluentui/react';
 import * as strings from 'SharePointDynamicFormWebPartStrings';
@@ -31,12 +30,6 @@ export interface FormRendererProps {
   onSubmit: (values: Record<string, any>) => Promise<void>;
   onCancel?: () => void;
   spfxContext?: any;
-  submitProgress?: {
-    phase: 'saving' | 'uploading';
-    total?: number;
-    completed?: number;
-    currentFile?: string;
-  };
 }
 
 export const FormRenderer: React.FC<FormRendererProps> = ({
@@ -48,7 +41,6 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
   onSubmit,
   onCancel,
   spfxContext,
-  submitProgress,
 }) => {
   const stateManagerRef = React.useRef<FormStateManager | null>(null);
   const validationEngineRef = React.useRef<ValidationEngine | null>(null);
@@ -351,23 +343,6 @@ export const FormRenderer: React.FC<FormRendererProps> = ({
 
   return (
     <div className={`form-renderer form-renderer--${effectiveMode}`}>
-      {submitProgress?.phase === 'uploading' && (
-        <MessageBar messageBarType={MessageBarType.info} className="form-message">
-          <div className="form-progress">
-            <div>
-              {strings.FormUploadingAttachments}
-              {submitProgress.total ? ` (${submitProgress.completed || 0}/${submitProgress.total})` : ''}
-              {submitProgress.currentFile ? `: ${submitProgress.currentFile}` : ''}
-            </div>
-            {submitProgress.total ? (
-              <ProgressIndicator percentComplete={(submitProgress.completed || 0) / submitProgress.total} />
-            ) : (
-              <ProgressIndicator />
-            )}
-          </div>
-        </MessageBar>
-      )}
-
       {submitError && (
         <MessageBar
           messageBarType={MessageBarType.error}

@@ -1,22 +1,40 @@
 /**
- * Attachment Field - Using PnP ListItemAttachments control
+ * Attachment Field - Using PnP ListItemAttachments control for all modes
+ *
+ * - New item (itemId=0): PnP control with itemId=0, files stored internally,
+ *   uploaded via ref.uploadAttachments() after item creation
+ * - Edit item (itemId>0): PnP control manages attachments directly
+ * - View mode: PnP control with disabled=true
  */
 
 import * as React from 'react';
 import { Text as CoreText } from '@microsoft/sp-core-library';
 import { BaseFieldProps } from './BaseField';
 import { ListItemAttachments } from '@pnp/spfx-controls-react/lib/ListItemAttachments';
-import { MessageBar, MessageBarType, DefaultButton, IconButton, Text } from '@fluentui/react';
+import { MessageBar, MessageBarType } from '@fluentui/react';
 import { spfi, SPFI } from '@pnp/sp';
 import { SPFx as spSPFx } from '@pnp/sp/presets/all';
 import '@pnp/sp/lists/web';
-import './AttachmentField.css';
 import './PnpControlCompat.css';
 import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface AttachmentFieldValue {
-  // Value is managed by the ListItemAttachments component
+  // Value managed by PnP ListItemAttachments control
 }
+
+/** Upload handler exposed by AttachmentField for new items */
+export interface AttachmentUploadHandler {
+  uploadAttachments: (itemId: number) => void;
+}
+
+/**
+ * Context for registering attachment upload handlers.
+ * Provided by SharePointDynamicForm, consumed by AttachmentField.
+ * Avoids threading refs through the entire component tree.
+ */
+export const AttachmentHandlerContext = React.createContext<{
+  registerHandler: (fieldId: string, handler: AttachmentUploadHandler | null) => void;
+} | null>(null);
 
 export interface AttachmentFieldProps extends BaseFieldProps {
   spfxContext?: any;
@@ -26,12 +44,14 @@ export interface AttachmentFieldProps extends BaseFieldProps {
 }
 
 export const AttachmentField: React.FC<AttachmentFieldProps> = ({
-  field, state, value, onChange, disabled, spfxContext, listName: propListName, listId: propListId, itemId: propItemId,
+  field, state, value, onChange, disabled, spfxContext,
+  listName: propListName, listId: propListId, itemId: propItemId,
 }) => {
   const [listId, setListId] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [selectedFiles, setSelectedFiles] = React.useState<File[]>([]);
+  const attachmentsRef = React.useRef<any>(null);
+  const ctx = React.useContext(AttachmentHandlerContext);
 
   const listName = propListName || field.config?.listName;
   const itemId = propItemId || field.config?.itemId;
@@ -39,19 +59,11 @@ export const AttachmentField: React.FC<AttachmentFieldProps> = ({
   const isReadOnly = Boolean(disabled || state.readOnly || state.disabled);
   const isNewItem = !itemId || itemId === 0;
 
-  const attachmentsRef = React.useRef<any>(null);
-
-  // Get listId from listName if not provided
+  // Fetch listId (required by ListItemAttachments for all modes)
   React.useEffect(() => {
     const fetchListId = async () => {
       if (!spfxContext) {
         setError(strings.FieldAttachmentMissingContext);
-        return;
-      }
-
-      if (isNewItem) {
-        setError(null);
-        setLoading(false);
         return;
       }
 
@@ -81,19 +93,28 @@ export const AttachmentField: React.FC<AttachmentFieldProps> = ({
     };
 
     void fetchListId();
-  }, [spfxContext, listName, initialListId, isNewItem]);
+  }, [spfxContext, listName, initialListId]);
 
+  // Register upload handler for new items so parent can call uploadAttachments after item creation
   React.useEffect(() => {
-    if (!isNewItem) return;
-    if (value && Array.isArray(value.files)) {
-      const files = value.files.map((f: any) => f.file).filter(Boolean);
-      setSelectedFiles(files);
-    } else {
-      setSelectedFiles([]);
-    }
-  }, [value, isNewItem]);
+    if (!ctx || !isNewItem) return;
 
-  // Show loading state
+    ctx.registerHandler(field.id, {
+      uploadAttachments: (targetItemId: number) => {
+        attachmentsRef.current?.uploadAttachments(targetItemId);
+      },
+    });
+
+    return () => {
+      ctx.registerHandler(field.id, null);
+    };
+  }, [ctx, field.id, isNewItem]);
+
+  // Notify form of changes for dirty state tracking
+  const handleAttachmentChange = React.useCallback(() => {
+    onChange({ changed: true });
+  }, [onChange]);
+
   if (loading) {
     return (
       <MessageBar messageBarType={MessageBarType.info}>
@@ -102,7 +123,6 @@ export const AttachmentField: React.FC<AttachmentFieldProps> = ({
     );
   }
 
-  // Show error state
   if (error) {
     return (
       <MessageBar messageBarType={MessageBarType.error}>
@@ -111,8 +131,7 @@ export const AttachmentField: React.FC<AttachmentFieldProps> = ({
     );
   }
 
-  // Show warning if no listId or listName
-  if (!listId && !listName) {
+  if (!listId) {
     return (
       <MessageBar messageBarType={MessageBarType.warning}>
         {strings.FieldAttachmentNeedListInfo}
@@ -120,74 +139,16 @@ export const AttachmentField: React.FC<AttachmentFieldProps> = ({
     );
   }
 
-  const updateSelectedFiles = (files: File[]) => {
-    setSelectedFiles(files);
-    onChange({
-      files: files.map((file) => ({ file, name: file.name })),
-    });
-  };
-
-  // 新建项：使用本地文件选择，提交时统一上传
-  if (isNewItem) {
-    return (
-      <div className="spdf-attachments spdf-attachments--new">
-        <MessageBar messageBarType={MessageBarType.info}>
-          {strings.FieldAttachmentUploadOnSubmit}
-        </MessageBar>
-        <div className="spdf-attachments__picker">
-          <input
-            type="file"
-            multiple
-            disabled={isReadOnly}
-            onChange={(e) => {
-              const files = Array.from(e.target.files || []);
-              updateSelectedFiles(files);
-            }}
-          />
-          {!isReadOnly && selectedFiles.length > 0 && (
-            <DefaultButton onClick={() => updateSelectedFiles([])}>{strings.FieldAttachmentClear}</DefaultButton>
-          )}
-        </div>
-        {selectedFiles.length > 0 && (
-          <ul className="spdf-attachments__list">
-            {selectedFiles.map((file, index) => (
-              <li key={`${file.name}-${index}`} className="spdf-attachments__item">
-                <span className="spdf-attachments__file">{file.name}</span>
-                {!isReadOnly && (
-                  <IconButton
-                    iconProps={{ iconName: 'Cancel' }}
-                    ariaLabel={strings.FieldAttachmentRemoveAria}
-                    onClick={() => {
-                      const next = selectedFiles.filter((_, i) => i !== index);
-                      updateSelectedFiles(next);
-                    }}
-                  />
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-        {selectedFiles.length === 0 && (
-          <Text variant="small" className="spdf-attachments__empty">{strings.FieldAttachmentEmpty}</Text>
-        )}
-      </div>
-    );
-  }
-
-  // 编辑项：使用 ListItemAttachments
-  if (listId) {
-    return (
-      <div className="spdf-attachments spdf-attachments--edit">
-        <ListItemAttachments
-          ref={attachmentsRef}
-          context={spfxContext}
-          listId={listId}
-          itemId={itemId || 0}
-          disabled={isReadOnly}
-        />
-      </div>
-    );
-  }
-
-  return null;
+  return (
+    <div className="spdf-attachments">
+      <ListItemAttachments
+        ref={attachmentsRef}
+        context={spfxContext}
+        listId={listId}
+        itemId={itemId || 0}
+        disabled={isReadOnly}
+        onAttachmentChange={handleAttachmentChange}
+      />
+    </div>
+  );
 };

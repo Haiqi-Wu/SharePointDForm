@@ -4,10 +4,9 @@ import { FormRenderer } from '../../../formEngine/components/FormRenderer';
 import { FormDesigner } from '../../../designer/components/FormDesigner';
 import { SharePointDataSource } from '../../../formEngine/data/SharePointDataSource';
 import { FormSchema, FormMode } from '../../../formEngine/core/types';
-import { Text } from '@microsoft/sp-core-library';
 import { MessageBar, MessageBarType, PrimaryButton, DefaultButton } from '@fluentui/react';
 import { BlankTemplate } from '../../../templates/formTemplates';
-import { SPHttpClient } from '@microsoft/sp-http';
+import { AttachmentHandlerContext } from '../../../formEngine/fields/AttachmentField';
 import * as strings from 'SharePointDynamicFormWebPartStrings';
 
 export interface SharePointDynamicFormContainerProps {
@@ -63,16 +62,23 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
   const [lookupOptions, setLookupOptions] = React.useState<Record<string, any[]>>({});
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  const [submitProgress, setSubmitProgress] = React.useState<{
-    phase: 'uploading';
-    total: number;
-    completed: number;
-    currentFile?: string;
-  } | null>(null);
   const [isSaving, setIsSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
 
   const dataSource = React.useMemo(() => new SharePointDataSource(context), [context]);
+
+  // Attachment upload handlers registered by AttachmentField via context
+  const attachmentHandlersRef = React.useRef<Map<string, { uploadAttachments: (itemId: number) => void }>>(new Map());
+  const registerAttachmentHandler = React.useCallback((fieldId: string, handler: { uploadAttachments: (itemId: number) => void } | null) => {
+    if (handler) {
+      attachmentHandlersRef.current.set(fieldId, handler);
+    } else {
+      attachmentHandlersRef.current.delete(fieldId);
+    }
+  }, []);
+  const attachmentHandlerContextValue = React.useMemo(() => ({
+    registerHandler: registerAttachmentHandler,
+  }), [registerAttachmentHandler]);
 
   const getODataFieldName = React.useCallback((fieldName: string): string => {
     if (!fieldName) return fieldName;
@@ -491,59 +497,8 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
     }
   };
 
-  // 上传附件到 SharePoint
-  const uploadAttachments = async (
-    listName: string,
-    itemId: number,
-    attachmentFields: Array<{ field: any; files: any[] }>
-  ): Promise<void> => {
-    const totalFiles = attachmentFields.reduce((sum, group) => sum + (group.files?.length || 0), 0);
-    let completed = 0;
-    if (totalFiles > 0) {
-      setSubmitProgress({ phase: 'uploading', total: totalFiles, completed: 0 });
-    }
-
-    try {
-      for (const { files } of attachmentFields) {
-        for (const fileData of files) {
-          try {
-            const file = fileData.file;
-            setSubmitProgress((prev) => prev ? { ...prev, completed, currentFile: file.name } : prev);
-            const endpoint = `/web/lists/getbytitle('${listName}')/items(${itemId})/AttachmentFiles/add(FileName='${file.name}')`;
-
-            // 读取文件为 ArrayBuffer
-            const arrayBuffer = await file.arrayBuffer();
-
-            // 使用 SPHttpClient 上传文件
-            await context.spHttpClient.post(
-              endpoint,
-              SPHttpClient.configurations.v1,
-              {
-                headers: {
-                  'X-RequestDigest': (context as any).pageContext?.requestDigest,
-                },
-                body: arrayBuffer,
-              }
-            );
-
-            completed += 1;
-            setSubmitProgress((prev) => prev ? { ...prev, completed, currentFile: file.name } : prev);
-          } catch (err: any) {
-            console.error(`Failed to upload attachment ${fileData.name}:`, err);
-            throw new Error(Text.format(strings.UploadAttachmentFailedTemplate, fileData.name, err?.message || strings.CommonUnknownError));
-          }
-        }
-      }
-    } finally {
-      setSubmitProgress(null);
-    }
-  };
-
   const handleSubmit = async (values: Record<string, any>): Promise<void> => {
     if (!schema) return;
-
-      // 收集附件字段（稍后处理）
-      const attachmentFields: Array<{ field: any; files: any[] }> = [];
 
       const itemData: Record<string, any> = {};
       for (const step of schema.steps) {
@@ -554,13 +509,8 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
             continue;
           }
 
-          // 收集附件字段，稍后处理
+          // 附件字段由 PnP ListItemAttachments 控件管理，跳过
           if (field.type === 'attachment') {
-            const fieldValue = values[field.id];
-            const files = fieldValue?.files || [];
-            if (files.length > 0) {
-              attachmentFields.push({ field, files });
-            }
             continue;
           }
 
@@ -607,9 +557,11 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
         createdItemId = newItem?.Id;
       }
 
-      // 处理附件上传
-      if (attachmentFields.length > 0 && context && createdItemId) {
-        await uploadAttachments(targetList, createdItemId, attachmentFields);
+      // 新建项时，通过 PnP ListItemAttachments 的 ref 上传附件
+      if (createdItemId && attachmentHandlersRef.current.size > 0) {
+        attachmentHandlersRef.current.forEach((handler) => {
+          handler.uploadAttachments(createdItemId!);
+        });
       }
   };
 
@@ -715,6 +667,7 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
       )}
 
       {/* 表单渲染 */}
+      <AttachmentHandlerContext.Provider value={attachmentHandlerContextValue}>
       <FormRenderer
         schema={{
           ...schema,
@@ -738,8 +691,8 @@ export const SharePointDynamicFormContainer: React.FC<SharePointDynamicFormConta
         onSubmit={handleSubmit}
         spfxContext={context}
         mode={mode}
-        submitProgress={submitProgress || undefined}
       />
+    </AttachmentHandlerContext.Provider>
     </div>
   );
 };
